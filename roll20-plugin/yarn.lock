@@ -977,6 +977,9 @@
   dependencies:
     undici-types "~5.26.4"
 
+"@types/roll20-ts@file:../roll20-ts":
+  version "1.0.0"
+
 "@vscode/web-custom-data@^0.4.2":
   version "0.4.13"
   resolved "https://registry.yarnpkg.com/@vscode/web-custom-data/-/web-custom-data-0.4.13.tgz#46d5f084fab6b8d4b47429ba5e22c42d2097ec8b"

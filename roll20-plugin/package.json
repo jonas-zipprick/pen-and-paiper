@@ -25,6 +25,7 @@
     "watch": "run-p _watchStorybook _watchVite"
   },
   "dependencies": {
+    "@types/roll20-ts": "file:../roll20-ts",
     "@octokit/rest": "22.0.0",
     "compression": "1.8.0",
     "compressorjs": "1.2.1",
