@@ -91,3 +91,6 @@ async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
         background_tasks.add_task(process_talk)
     return {"message": "Notification sent in the background"}
 
+@app.get('/')
+def health_check():
+    return {}
