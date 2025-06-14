@@ -59,7 +59,7 @@ async def process_talk():
     is_running = True
     while True:
         if unprocessed_talk == '':
-            time.sleep(0)
+            await asyncio.sleep(0.1)
             continue
         this_talk = unprocessed_talk
         unprocessed_talk = ''
