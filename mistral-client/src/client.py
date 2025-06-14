@@ -12,6 +12,26 @@ from mistralai.types import BaseModel
 from pathlib import Path
 from fastapi import BackgroundTasks, FastAPI, WebSocket
 
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+manager = ConnectionManager()
+
+
 MODEL = "mistral-small-2503"
 server_url = "https://mcp.semgrep.ai/sse"
 api_key = os.environ["MISTRAL_API_KEY"]
@@ -52,7 +72,6 @@ run_ctx = None
 unprocessed_talk = ''
 is_running = False
 summaryOfWhatWasSaid = ''
-websockets = []
 async def process_talk():
     global is_running
     global unprocessed_talk
@@ -81,12 +100,12 @@ async def process_talk():
             print('sending update')
             for entry in res.output_entries:
                 content = json.loads(entry.content)
-                websocket.send_text("content:")
-                websocket.send_text("Read this text: " + content['readThisTextToYourPlayers'])
-                websocket.send_text("Related Rule: " + content['relatedGameRule'])
-                websocket.send_text("What could happen Next: " + content['whatCouldHappenNext'])
+                await manager.broadcast("content:")
+                await manager.broadcast("Read this text: " + content['readThisTextToYourPlayers'])
+                await manager.broadcast("Related Rule: " + content['relatedGameRule'])
+                await manager.broadcast("What could happen Next: " + content['whatCouldHappenNext'])
                 summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
-                websocket.send_text("Summary of what was said: " + summaryOfWhatWasSaid)
+                await manager.broadcast("Summary of what was said: " + summaryOfWhatWasSaid)
 
 app = FastAPI()
 
@@ -107,5 +126,4 @@ async def health_check():
 
 @app.websocket("/ws")
 async def new_subscription(websocket: WebSocket):
-    await websocket.accept()
-    websockets.append(websocket)
+    await manager.connect(websocket)
