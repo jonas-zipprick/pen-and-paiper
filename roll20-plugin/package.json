@@ -17,8 +17,9 @@
     "_deleteBuildTmp": "rimraf .build-tmp",
     "_deleteLib": "rimraf lib",
     "_deleteNodeModules": "rimraf node_modules",
-    "build": "tsc",
-    "_watchVite": "vite",
+    "_tsc-watch": "tsc --watch",
+    "_vite-watch": "vite build --watch",
+    "build-watch": "run-p _tsc-watch _vite-watch",
     "clean": "run-s _deleteBuildTmp _deleteLib",
     "distclean": "run-s clean _deleteNodeModules",
     "test": "../../../node_modules/.bin/vitest --passWithNoTests",
@@ -39,11 +40,13 @@
     "html-loader": "3.0.1",
     "lit-analyzer": "2.0.3",
     "npm-run-all2": "8.0.1",
+    "@stadtlandnetz/rollup-plugin-postprocess": "1.1.0",
     "pretty": "2.0.0",
     "rimraf": "5.0.5",
     "sass-loader": "13.3.2",
     "style-loader": "3.3.4",
     "typescript": "5.8.3",
-    "typescript-language-server": "4.3.3"
+    "typescript-language-server": "4.3.3",
+    "vite": "6.1.5"
   }
 }

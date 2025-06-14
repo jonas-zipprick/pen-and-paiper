@@ -9,6 +9,6 @@
     "tsBuildInfoFile": ".build-tmp/tsconfig.tsbuildinfo",
     "baseUrl": "src",
     "noImplicitOverride": true,
-    "types": ["node"]
+    "types": ["@types/roll20-ts"]
   }
 }
