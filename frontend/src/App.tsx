@@ -1,30 +1,77 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useDropzone } from 'react-dropzone';
 
-// Define the structure of the API response
+// --- Types and Interfaces ---
+type Tab = 'uploader' | 'streamer';
+type UploadStatus = 'idle' | 'loading' | 'success' | 'error';
+type SocketStatus = 'Connecting' | 'Connected' | 'Disconnected' | 'Error';
+
 interface ApiResponse {
     chunks: string[];
 }
 
-// Define the application's state for async operations
-type Status = 'idle' | 'loading' | 'success' | 'error';
-
+// --- Main App Component ---
 export default function App() {
+    const [activeTab, setActiveTab] = useState<Tab>('uploader');
+
+    return (
+        <div className="bg-slate-900 min-h-screen font-sans">
+            <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
+                {/* Header & Tab Navigation */}
+                <header className="text-center mb-8">
+                    <h1 className="text-4xl sm:text-5xl font-bold text-sky-400 tracking-wider">
+                        Pen & P.A.I.per
+                    </h1>
+                    <p className="text-slate-400 mt-2">Your Digital Scribe for Adventures & Archives</p>
+                    <nav className="mt-6 flex justify-center border-b border-slate-700">
+                        <TabButton
+                            label="PDF Uploader"
+                            isActive={activeTab === 'uploader'}
+                            onClick={() => setActiveTab('uploader')}
+                        />
+                        <TabButton
+                            label="Live Stream"
+                            isActive={activeTab === 'streamer'}
+                            onClick={() => setActiveTab('streamer')}
+                        />
+                    </nav>
+                </header>
+
+                <main>
+                    {activeTab === 'uploader' && <UploaderView />}
+                    {activeTab === 'streamer' && <StreamerView />}
+                </main>
+            </div>
+        </div>
+    );
+}
+
+// --- Tab Button Component ---
+const TabButton = ({ label, isActive, onClick }: { label: string; isActive: boolean; onClick: () => void; }) => (
+    <button
+        onClick={onClick}
+        className={`px-4 py-2 -mb-px font-semibold text-lg border-b-4 transition-colors duration-300 ${
+            isActive
+                ? 'text-sky-400 border-sky-400'
+                : 'text-slate-400 border-transparent hover:text-sky-300'
+        }`}
+    >
+        {label}
+    </button>
+);
+
+
+// --- Uploader View Component ---
+const UploaderView = () => {
     const [textChunks, setTextChunks] = useState<string[]>([]);
-    const [status, setStatus] = useState<Status>('idle');
+    const [status, setStatus] = useState<UploadStatus>('idle');
     const [error, setError] = useState<string | null>(null);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
 
-    // Callback function to handle file drops
     const onDrop = useCallback(async (acceptedFiles: File[]) => {
         const file = acceptedFiles[0];
-        if (!file) {
-            setError('No file selected or file type is not supported.');
-            setStatus('error');
-            return;
-        }
+        if (!file) return;
 
-        // Reset state before a new upload
         setStatus('loading');
         setError(null);
         setTextChunks([]);
@@ -33,38 +80,31 @@ export default function App() {
         formData.append('pdf', file);
 
         try {
-            // Send the file to the backend API
             const response = await fetch('http://localhost:3001/upload', {
                 method: 'POST',
                 body: formData,
             });
-
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
             }
-
             const data: ApiResponse = await response.json();
             setTextChunks(data.chunks);
             setStatus('success');
         } catch (e) {
             const errorMessage = e instanceof Error ? e.message : 'An unknown error occurred.';
-            console.error('Upload failed:', errorMessage);
             setError(`Upload failed: ${errorMessage}`);
             setStatus('error');
         }
     }, []);
 
-    // Configure react-dropzone
     const { getRootProps, getInputProps, isDragActive } = useDropzone({
         onDrop,
         accept: { 'application/pdf': ['.pdf'] },
         multiple: false,
     });
-
-    // Function to handle copying text to clipboard
+    
     const handleCopy = (text: string, index: number) => {
-        // Using the deprecated execCommand for broader iframe compatibility
         const textArea = document.createElement('textarea');
         textArea.value = text;
         document.body.appendChild(textArea);
@@ -72,7 +112,7 @@ export default function App() {
         try {
             document.execCommand('copy');
             setCopiedIndex(index);
-            setTimeout(() => setCopiedIndex(null), 2000); // Reset after 2 seconds
+            setTimeout(() => setCopiedIndex(null), 2000);
         } catch (err) {
             console.error('Failed to copy text: ', err);
         }
@@ -80,69 +120,35 @@ export default function App() {
     };
 
     return (
-        <div className="bg-slate-900 text-white min-h-screen font-sans p-4 sm:p-6 lg:p-8">
-            <div className="max-w-4xl mx-auto">
-                {/* Header */}
-                <header className="text-center mb-8">
-                    <h1 className="text-4xl sm:text-5xl font-bold text-sky-400">PDF Text Extractor</h1>
-                    <p className="text-slate-400 mt-2">Upload a PDF to split it into searchable text chunks.</p>
-                </header>
-
-                {/* Dropzone */}
-                <div
-                    {...getRootProps()}
-                    className={`border-4 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-300 ${
-                        isDragActive ? 'border-sky-400 bg-slate-800' : 'border-slate-600 hover:border-sky-500'
-                    }`}
-                >
-                    <input {...getInputProps()} />
-                    <p className="text-slate-300">
-                        {isDragActive ? 'Drop the PDF here...' : "Drag 'n' drop a PDF file here, or click to select"}
-                    </p>
-                    <p className="text-sm text-slate-500 mt-1">Maximum file size: 10MB</p>
-                </div>
-
-                {/* Status Display */}
-                <div className="mt-8">
-                    {status === 'loading' && (
-                        <div className="flex items-center justify-center p-4 bg-slate-800 rounded-lg">
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-sky-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <p className="text-lg">Processing your PDF...</p>
-                        </div>
-                    )}
-                    {status === 'error' && (
-                        <div className="p-4 bg-red-900/50 border border-red-500 text-red-300 rounded-lg text-center">
-                            <p className="font-bold">An Error Occurred</p>
-                            <p>{error}</p>
-                        </div>
-                    )}
-                    {status === 'success' && (
-                         <div className="text-center p-4 bg-green-900/50 border border-green-500 text-green-300 rounded-lg">
-                            <p className="font-bold">PDF processed successfully!</p>
-                             <p>{textChunks.length} text chunks extracted.</p>
-                        </div>
-                    )}
-                </div>
-
-
-                {/* Results - Text Chunks */}
-                {textChunks.length > 0 && (
-                    <div className="mt-8 space-y-4">
+        <div>
+            <div
+                {...getRootProps()}
+                className={`border-4 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-300 ${
+                    isDragActive ? 'border-sky-400 bg-slate-800' : 'border-slate-600 hover:border-sky-500'
+                }`}
+            >
+                <input {...getInputProps()} />
+                <p className="text-slate-300">
+                    {isDragActive ? 'Drop the PDF here...' : "Drag 'n' drop a PDF file here, or click to select"}
+                </p>
+                <p className="text-sm text-slate-500 mt-1">Maximum file size: 10MB</p>
+            </div>
+            {/* Status and Results from Uploader... */}
+            <div className="mt-8">
+                {status === 'loading' && <div className="text-center p-4">Loading...</div>}
+                {status === 'error' && <div className="p-4 bg-red-900/50 text-red-300 rounded-lg">{error}</div>}
+                {status === 'success' && textChunks.length > 0 && (
+                    <div className="space-y-4">
                         <h2 className="text-2xl font-bold text-slate-300">Extracted Text Chunks</h2>
                         {textChunks.map((chunk, index) => (
                             <div key={index} className="bg-slate-800 p-4 rounded-lg shadow-md relative">
-                                <button 
+                                 <button 
                                     onClick={() => handleCopy(chunk, index)}
                                     className="absolute top-3 right-3 bg-slate-700 hover:bg-sky-500 text-white font-bold py-1 px-2 rounded-md text-xs transition-all"
                                 >
                                     {copiedIndex === index ? 'Copied!' : 'Copy'}
                                 </button>
-                                <p className="text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed pr-16">
-                                    {chunk}
-                                </p>
+                                <p className="text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed pr-16">{chunk}</p>
                             </div>
                         ))}
                     </div>
@@ -150,4 +156,56 @@ export default function App() {
             </div>
         </div>
     );
-}
+};
+
+// --- Streamer View Component ---
+const StreamerView = () => {
+    // NOTE: Replace this with your actual WebSocket address.
+    // This is a public echo server for demonstration.
+    const WEBSOCKET_URL = "https://67934-3000.2.codesphere.com/ws/"
+    const [textChunk, setTextChunk] = useState<string>('Awaiting transmission from the ether...');
+    const [status, setStatus] = useState<SocketStatus>('Connecting');
+    const ws = useRef<WebSocket | null>(null);
+
+    useEffect(() => {
+        ws.current = new WebSocket(WEBSOCKET_URL);
+        ws.current.onopen = () => setStatus('Connected');
+        ws.current.onclose = () => setStatus('Disconnected');
+        ws.current.onerror = () => setStatus('Error');
+        ws.current.onmessage = (event) => {
+            // This ensures the update is atomic.
+            setTextChunk(event.data);
+        };
+        
+        // Cleanup on component unmount
+        return () => {
+            ws.current?.close();
+        };
+    }, [WEBSOCKET_URL]);
+
+    const getStatusIndicator = () => {
+        switch (status) {
+            case 'Connected': return { text: 'Scroll is Live', color: 'text-green-400' };
+            case 'Connecting': return { text: 'Scrying...', color: 'text-yellow-400' };
+            case 'Disconnected': return { text: 'Connection Severed', color: 'text-red-500' };
+            case 'Error': return { text: 'A Magical Disturbance Occurred', color: 'text-red-500' };
+            default: return { text: 'Unknown State', color: 'text-gray-400' };
+        }
+    };
+
+    const { text, color } = getStatusIndicator();
+
+    return (
+        <div className="p-6 bg-stone-900/50 rounded-lg border-2 border-amber-900" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/old-paper.png')` }}>
+            <div className="font-dnd text-center mb-4">
+                <h2 className={`text-2xl font-bold ${color}`}>{text}</h2>
+                <p className="text-amber-900">Listening for whispers on the ethereal plane...</p>
+            </div>
+            <div className="bg-amber-50/80 border-4 border-amber-800 rounded-lg p-6 shadow-inner min-h-[400px] flex items-center justify-center">
+                 <p className="font-dnd text-amber-900 text-2xl leading-relaxed whitespace-pre-wrap text-center">
+                    {textChunk}
+                 </p>
+            </div>
+        </div>
+    );
+};

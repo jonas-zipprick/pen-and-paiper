@@ -38,15 +38,36 @@ const splitTextIntoChunks = (text: string, chunkSize: number): string[] => {
 
 
 const cleanText = (text: string): string => {
-    // This regex removes most C0 and C1 control characters.
-    // These are non-printable characters that often appear as "junk" in parsed text.
-    // We leave in standard whitespace characters like newline, tab, etc.
-    // \s+ is used to collapse multiple whitespace characters (spaces, tabs, newlines) into a single space.
-    return text
-        .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+    // Step 1: Replace common ligatures. Ligatures are special characters
+    // in fonts that combine two or more letters, like 'fi' or 'ffl'.
+    // If not handled, they can appear as garbage characters.
+    let cleaned = text
+        .replace(/ﬀ/g, 'ff')
+        .replace(/ﬁ/g, 'fi')
+        .replace(/ﬂ/g, 'fl')
+        .replace(/ﬃ/g, 'ffi')
+        .replace(/ﬄ/g, 'ffl')
+        .replace(/ﬅ/g, 'st');
+
+    // Step 2: Join words that are hyphenated and split across newlines.
+    // This removes the hyphen and the line break to form the complete word.
+    cleaned = cleaned.replace(/-\n/g, '');
+    
+    // Step 3: Remove any character that is NOT a standard letter, number,
+    // common punctuation, or whitespace. This is a whitelist approach to
+    // eliminate the more random "junk" characters that can result from
+    // font encoding issues.
+    // We replace them with a space to avoid accidentally merging words.
+    const unwantedCharsRegex = /[^a-zA-Z0-9\s.,;:!?'"()\[\]{}-]/g;
+    cleaned = cleaned.replace(unwantedCharsRegex, ' ');
+
+    // Step 4: Collapse multiple consecutive whitespace characters (spaces,
+    // tabs, newlines) into a single space. This normalizes the text flow.
+    cleaned = cleaned.replace(/\s+/g, ' ').trim();
+
+    return cleaned;
 };
+
 
 
 // --- API Routes ---
