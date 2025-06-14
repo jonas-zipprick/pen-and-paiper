@@ -2,30 +2,19 @@ schemaVersion: v0.2
 prepare:
   steps:
     - name: Install root
-      command: yarn install
-    - name: Install backend
-      command: cd backend && yarn install
-    - name: Install frontend
-      command: cd frontend && yarn install
+      command: nix-env -iA nixpkgs.uv
+    - command: uv python install 3.10.0
+    - command: cd mistral-client && uv sync
 test:
   steps: []
 run:
-  backend:
+  mistral-client:
     steps:
-      - name: Run
-        command: cd backend && yarn run start:dev
-    plan: 8
-    replicas: 1
-    isPublic: true
-    network:
-      path: /backend
-      stripPath: true
-  frontend:
-    steps:
-      - command: cd frontend && yarn dev
+      - command: cd mistral-client && uv run fastapi run src/client.py --host 0.0.0.0
+          --port 3000
     plan: 8
     replicas: 1
     isPublic: true
     network:
       path: /
-      stripPath: false
+      stripPath: true

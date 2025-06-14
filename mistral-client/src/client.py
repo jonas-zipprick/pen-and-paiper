@@ -10,7 +10,7 @@ from mistralai.extra.mcp.sse import MCPClientSSE, SSEServerParams
 from mistralai.types import BaseModel
 
 from pathlib import Path
-from fastapi import BackgroundTasks, FastAPI
+from fastapi import BackgroundTasks, FastAPI, WebSocket
 
 MODEL = "mistral-small-2503"
 server_url = "https://mcp.semgrep.ai/sse"
@@ -52,6 +52,7 @@ run_ctx = None
 unprocessed_talk = ''
 is_running = False
 summaryOfWhatWasSaid = ''
+websockets = []
 async def process_talk():
     global is_running
     global unprocessed_talk
@@ -77,16 +78,15 @@ async def process_talk():
         )
 
         for websocket in websockets:
-            websocket.send_text(content.readThisTextToYourPlayers)
-        print('sending update')
-        for entry in res.output_entries:
-            content = json.loads(entry.content)
-            websocket.send_text("content:")
-            websocket.send_text("Read this text: " + content['readThisTextToYourPlayers'])
-            websocket.send_text("Related Rule: " + content['relatedGameRule'])
-            websocket.send_text("What could happen Next: " + content['whatCouldHappenNext'])
-            summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
-            websocket.send_text("Summary of what was said: " + summaryOfWhatWasSaid)
+	        print('sending update')
+			for entry in res.output_entries:
+				content = json.loads(entry.content)
+				websocket.send_text("content:")
+				websocket.send_text("Read this text: " + content['readThisTextToYourPlayers'])
+				websocket.send_text("Related Rule: " + content['relatedGameRule'])
+				websocket.send_text("What could happen Next: " + content['whatCouldHappenNext'])
+				summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
+				websocket.send_text("Summary of what was said: " + summaryOfWhatWasSaid)
 
 app = FastAPI()
 
@@ -99,10 +99,12 @@ async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
     return {"message": "Notification sent in the background"}
 
 @app.get('/')
-def health_check():
-    return {}
+async def health_check():
+	global run_ctx
+	if run_ctx is None:
+		run_ctx = await run_ctx_co
+	return {"message": "OK"}
 
-websockets = []
 @app.websocket("/ws")
 async def new_subscription(websocket: WebSocket):
     await websocket.accept()
