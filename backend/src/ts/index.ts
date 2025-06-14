@@ -9,7 +9,7 @@ const server = http.createServer(app);
 // 2. Initialize a WebSocket server and attach it to the HTTP server
 const wss = new WebSocketServer({ server });
 
-const PORT = 8080;
+const PORT = 3000;
 
 // 3. Set up the WebSocket connection handler
 wss.on('connection', (ws) => {

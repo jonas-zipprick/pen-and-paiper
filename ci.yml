@@ -1,0 +1,20 @@
+schemaVersion: v0.2
+prepare:
+  steps:
+    - name: Install root
+      command: yarn install
+    - name: Install backend
+      command: cd backend && yarn install
+test:
+  steps: []
+run:
+  backend:
+    steps:
+      - name: Run
+        command: cd backend && yarn run start:dev
+    plan: 8
+    replicas: 1
+    isPublic: true
+    network:
+      path: /
+      stripPath: false
