@@ -1,4 +1,4 @@
-# pen-and-paiper
+# pen and pAIper
 A real-time Dungeon-Master assistant
 
 Pronunciation: pɛn ænd ˈpɑɪpə
