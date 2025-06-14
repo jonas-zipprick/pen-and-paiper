@@ -25,10 +25,7 @@ class ConnectionManager:
 
     async def broadcast(self, message: str):
         for connection in self.active_connections:
-            try:
-                await connection.send_text(message)
-            except WebSocketDisconnect:
-                self.disconnect(connection)
+            await connection.send_text(message)
 
 manager = ConnectionManager()
 
@@ -126,3 +123,8 @@ async def health_check():
 @app.websocket("/ws")
 async def new_subscription(websocket: WebSocket):
     await manager.connect(websocket)
+    try:
+        while True:
+            await websocket.receive_json()
+    except WebSocketDisconnect:
+        socket_manager.disconnect(websocket, user)
