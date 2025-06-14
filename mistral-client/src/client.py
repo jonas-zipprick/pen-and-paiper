@@ -75,15 +75,18 @@ async def process_talk():
             run_ctx=run_ctx,
             inputs="So far this happened: " + summaryOfWhatWasSaid + "\nNow, Someone people in the group say: " + this_talk,
         )
-        # Print the results
+
+        for websocket in websockets:
+            websocket.send_text(content.readThisTextToYourPlayers)
+        print('sending update')
         for entry in res.output_entries:
             content = json.loads(entry.content)
-            print("content:")
-            print("Read this text: " + content['readThisTextToYourPlayers'])
-            print("Related Rule: " + content['relatedGameRule'])
-            print("What could happen Next: " + content['whatCouldHappenNext'])
+            websocket.send_text("content:")
+            websocket.send_text("Read this text: " + content['readThisTextToYourPlayers'])
+            websocket.send_text("Related Rule: " + content['relatedGameRule'])
+            websocket.send_text("What could happen Next: " + content['whatCouldHappenNext'])
             summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
-            print("Summary of what was said: " + summaryOfWhatWasSaid)
+            websocket.send_text("Summary of what was said: " + summaryOfWhatWasSaid)
 
 app = FastAPI()
 
@@ -98,3 +101,9 @@ async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
 @app.get('/')
 def health_check():
     return {}
+
+websockets = []
+@app.websocket("/ws")
+async def new_subscription(websocket: WebSocket):
+    await websocket.accept()
+    websockets.append(websocket)
