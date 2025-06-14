@@ -10,7 +10,7 @@ from mistralai.extra.mcp.sse import MCPClientSSE, SSEServerParams
 from mistralai.types import BaseModel
 
 from pathlib import Path
-from fastapi import BackgroundTasks, FastAPI, WebSocket
+from fastapi import BackgroundTasks, FastAPI, WebSocket, WebSocketDisconnect
 
 class ConnectionManager:
     def __init__(self):
