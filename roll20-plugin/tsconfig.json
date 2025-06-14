@@ -9,26 +9,6 @@
     "tsBuildInfoFile": ".build-tmp/tsconfig.tsbuildinfo",
     "baseUrl": "src",
     "noImplicitOverride": true,
-    "types": ["node"],
-    "jsx": "react-jsx",
-    "plugins": [
-      {
-        "name": "ts-lit-plugin",
-        "strict": true,
-        "rules": {
-          "no-legacy-attribute": "error",
-          "no-property-visibility-mismatch": "error",
-          "no-missing-element-type-definition": "error",
-          "no-missing-import": "off",
-          "no-unintended-mixed-binding": "error",
-          // TODO (@QaysAyad) enable this once you found a way to not inculde ref function from the lit library
-          "no-unknown-attribute": "off",
-          "no-unknown-event": "error",
-          "no-unknown-property": "error",
-          "no-unknown-slot": "error",
-          "no-unknown-tag-name": "error"
-        }
-      }
-    ]
+    "types": ["node"]
   }
 }

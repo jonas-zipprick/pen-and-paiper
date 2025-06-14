@@ -15,7 +15,7 @@
       "ES2023"
     ],
     "types": [
-      
+
     ],
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
@@ -27,9 +27,9 @@
     "**/__mocks__/**",
     // Due to packages/ide/browser/src/ts/react/design-system/lib
     // which is expected by shadcn
-    "packages/*/lib/**",
-    "../../packages/*/lib/**",
-    "packages/*/*/lib/**",
+    "*/lib/**",
+    "../../*/lib/**",
+    "*/*/lib/**",
     "../../../packages/*/*/lib/**",
     "**/jestEnv.setup.ts",
     "**/jest.config.ts",
