@@ -1,23 +1,32 @@
 import {on, Message, log, Roll20Object, getAllObjs} from 'roll20-ts';
 
+import {config} from './config.js';
+
+const sendGameState = async () => {
+    const state = getAllObjs();
+    await fetch([config.backendUrl, 'state'].join('/'), {
+        method: "POST",
+        body: JSON.stringify(state),
+        headers: {
+            "Content-type": "application/json; charset=UTF-8"
+        }
+    });
+}
+
 class Paiper {
-    public start(): void {
+    public async start(): Promise<void> {
+        await sendGameState();
         getAllObjs();
         on("chat:message", this.chatMessage.bind(this));
-        on("change:graphic", this.changeGraphic.bind(this));
+        on("change:graphic", () => sendGameState());
     }
 
     private chatMessage(msg: Message): void {
         log(JSON.stringify(msg));
     }
-
-    private changeGraphic(obj: Roll20Object): void {
-        log(JSON.stringify(obj));
-        log(getAllObjs());
-    }
 }
 
-on("ready", () => {
+on("ready", async () => {
     const p = new Paiper();
-    p.start();
+    await p.start();
 });
