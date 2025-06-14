@@ -51,9 +51,13 @@ run_ctx = None
 
 unprocessed_talk = ''
 is_running = False
+summaryOfWhatWasSaid = ''
 async def process_talk():
     global is_running
     global unprocessed_talk
+    global summaryOfWhatWasSaid
+    global run_ctx
+
     if is_running:
         return
     is_running = True
@@ -65,12 +69,11 @@ async def process_talk():
         unprocessed_talk = ''
         print('next tip')
         print(this_talk)
-        global run_ctx
         if run_ctx is None:
             run_ctx = await run_ctx_co
         res = await client.beta.conversations.run_async(
             run_ctx=run_ctx,
-            inputs="Someone people in the group say: " + this_talk,
+            inputs="So far this happened: " + summaryOfWhatWasSaid + "\nNow, Someone people in the group say: " + this_talk,
         )
         # Print the results
         for entry in res.output_entries:
@@ -79,7 +82,8 @@ async def process_talk():
             print("Read this text: " + content['readThisTextToYourPlayers'])
             print("Related Rule: " + content['relatedGameRule'])
             print("What could happen Next: " + content['whatCouldHappenNext'])
-            print("Summary of what was said: " + content['summaryOfWhatWasSaid'])
+            summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
+            print("Summary of what was said: " + summaryOfWhatWasSaid)
 
 app = FastAPI()
 
