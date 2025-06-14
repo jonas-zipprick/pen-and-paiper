@@ -22,7 +22,7 @@ run:
       stripPath: true
   frontend:
     steps:
-      - command: cd frontend && yarn run dev
+      - command: cd frontend && yarn dev
     plan: 8
     replicas: 1
     isPublic: true
