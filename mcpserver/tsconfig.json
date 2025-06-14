@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.browser.json",
+  "compilerOptions": {
+    // Needed for webpack magic comments (code splitting)
+    // Actual comments are stripped by webpack.
+    "removeComments": false,
+    "rootDir": "src/ts",
+    "outDir": "lib",
+    "tsBuildInfoFile": ".build-tmp/tsconfig.tsbuildinfo",
+    "baseUrl": "src",
+    "noImplicitOverride": true,
+  }
+}
