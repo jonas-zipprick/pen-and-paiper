@@ -5,6 +5,8 @@ prepare:
       command: yarn install
     - name: Install backend
       command: cd backend && yarn install
+    - name: Install frontend
+      command: cd frontend && yarn install
 test:
   steps: []
 run:
@@ -12,6 +14,15 @@ run:
     steps:
       - name: Run
         command: cd backend && yarn run start:dev
+    plan: 8
+    replicas: 1
+    isPublic: true
+    network:
+      path: /backend
+      stripPath: true
+  frontend:
+    steps:
+      - command: cd frontend && yarn run dev
     plan: 8
     replicas: 1
     isPublic: true
