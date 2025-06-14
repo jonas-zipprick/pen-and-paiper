@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "strict": true,
+    "composite": true,
+    "esModuleInterop": true,
+    "incremental": true,
+    "removeComments": true,
+    "lib": [
+      "ES2023"
+    ],
+    "types": [
+      
+    ],
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    // TODO(daniel): Re-enable once jest types are fixed
+    "skipLibCheck": true,
+  },
+  "exclude": [
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    // Due to packages/ide/browser/src/ts/react/design-system/lib
+    // which is expected by shadcn
+    "packages/*/lib/**",
+    "../../packages/*/lib/**",
+    "packages/*/*/lib/**",
+    "../../../packages/*/*/lib/**",
+    "**/jestEnv.setup.ts",
+    "**/jest.config.ts",
+    "**/vitest.*.ts",
+    "**/jest-manual.config.ts"
+  ]
+}
