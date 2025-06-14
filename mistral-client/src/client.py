@@ -95,17 +95,15 @@ async def process_talk():
             run_ctx=run_ctx,
             inputs="So far this happened: " + summaryOfWhatWasSaid + "\nNow, Someone people in the group say: " + this_talk,
         )
-
-        for websocket in websockets:
-            print('sending update')
-            for entry in res.output_entries:
-                content = json.loads(entry.content)
-                await manager.broadcast("content:")
-                await manager.broadcast("Read this text: " + content['readThisTextToYourPlayers'])
-                await manager.broadcast("Related Rule: " + content['relatedGameRule'])
-                await manager.broadcast("What could happen Next: " + content['whatCouldHappenNext'])
-                summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
-                await manager.broadcast("Summary of what was said: " + summaryOfWhatWasSaid)
+        print('sending update')
+        for entry in res.output_entries:
+            content = json.loads(entry.content)
+            await manager.broadcast("content:")
+            await manager.broadcast("Read this text: " + content['readThisTextToYourPlayers'])
+            await manager.broadcast("Related Rule: " + content['relatedGameRule'])
+            await manager.broadcast("What could happen Next: " + content['whatCouldHappenNext'])
+            summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
+            await manager.broadcast("Summary of what was said: " + summaryOfWhatWasSaid)
 
 app = FastAPI()
 
