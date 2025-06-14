@@ -78,15 +78,15 @@ async def process_talk():
         )
 
         for websocket in websockets:
-	        print('sending update')
-			for entry in res.output_entries:
-				content = json.loads(entry.content)
-				websocket.send_text("content:")
-				websocket.send_text("Read this text: " + content['readThisTextToYourPlayers'])
-				websocket.send_text("Related Rule: " + content['relatedGameRule'])
-				websocket.send_text("What could happen Next: " + content['whatCouldHappenNext'])
-				summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
-				websocket.send_text("Summary of what was said: " + summaryOfWhatWasSaid)
+            print('sending update')
+            for entry in res.output_entries:
+                content = json.loads(entry.content)
+                websocket.send_text("content:")
+                websocket.send_text("Read this text: " + content['readThisTextToYourPlayers'])
+                websocket.send_text("Related Rule: " + content['relatedGameRule'])
+                websocket.send_text("What could happen Next: " + content['whatCouldHappenNext'])
+                summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
+                websocket.send_text("Summary of what was said: " + summaryOfWhatWasSaid)
 
 app = FastAPI()
 
@@ -100,10 +100,10 @@ async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
 
 @app.get('/')
 async def health_check():
-	global run_ctx
-	if run_ctx is None:
-		run_ctx = await run_ctx_co
-	return {"message": "OK"}
+    global run_ctx
+    if run_ctx is None:
+        run_ctx = await run_ctx_co
+    return {"message": "OK"}
 
 @app.websocket("/ws")
 async def new_subscription(websocket: WebSocket):
