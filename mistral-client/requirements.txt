@@ -2,3 +2,4 @@ mistralai
 mcp
 griffe
 authlib
+fastapi[standard]
