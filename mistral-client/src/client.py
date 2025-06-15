@@ -41,9 +41,6 @@ class DmTip(BaseModel):
     relatedGameRule: str
     whatCouldHappenNext: str
 
-class RaQuery(BaseModel):
-    query: str
-
 client = Mistral(api_key)
 agent = client.beta.agents.create(
     model=MODEL,
@@ -73,12 +70,8 @@ async def setup_run_ctx():
 
         Every 10 seconds, I will send you what the people in the room have said,
         as they play the game.
-        This is what I call "first prompt".
-        Your response to this first prompt has to be query to a vector database
-        that contains background information about the current game like rule books,
-        adventure books, player character-sheets.
-        I will then query that information for you and give it to you in a second prompt.
-        Your response to that second prompt should be the actual tip and have
+       
+        Your response to that prompt should be the actual tip and have
         the following content (square brackets must be replaced by you with
         actual content):
 
@@ -126,6 +119,7 @@ async def setup_run_ctx():
     ctx = RunContext(
         conversation_id=conversation_id,
         agent_id=agent.id,
+        output_format=DmTip,
         continue_on_fn_error=True,
     )
     return ctx
@@ -153,33 +147,11 @@ async def process_talk():
         print(this_talk)
         if run_ctx is None:
             run_ctx = await run_ctx_co
-        query_res = await client.beta.conversations.run_async(
+        res = await client.beta.conversations.run_async(
             run_ctx=run_ctx,
-            output_format=RaQuery,
-            inputs='''First prompt, this was the talk:
-
-            >>>
-            {this_talk}
-            <<<
-
-            Please respond with the query now
-            '''.format(this_talk=this_talk),
+            inputs=this_talk,
         )
-        print(query_res)
-        default_collection_name = 'dnd-5e-core-rules'
-        n_results = 2
-        db_res = query_collection(default_collection_name, query_res.output_entries[0].content, int(n_results))
-        print(db_res)
-        tip_res = await client.beta.conversations.run_async(
-            run_ctx=run_ctx,
-            output_format=DmTip,
-            inputs='''Second prompt, here is the information of the database: {db_res}
-
-            Please respond with the tip now
-            '''.format(db_res=db_res),
-        )
-        print('sending update')
-        for entry in tip_res.output_entries:
+        for entry in res.output_entries:
             content = json.loads(entry.content)
             print(content)
             await manager.broadcast("content:")
@@ -200,7 +172,7 @@ async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
         background_tasks.add_task(process_talk)
     return {"message": "Notification sent in the background"}
 
-@app.get('/assistant/')
+@app.get('/')
 async def health_check():
     global run_ctx
     if run_ctx is None:

@@ -19,7 +19,7 @@ run:
     isPublic: true
     network:
       path: /assistant
-      stripPath: true
+      stripPath: false
   frontend:
     steps:
       - name: run frontend
