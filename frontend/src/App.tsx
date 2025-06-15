@@ -13,7 +13,7 @@ export default function App() {
     const [activeTab, setActiveTab] = useState<Tab>('streamer');
 
     return (
-        <div className="bg-stone-800 text-stone-200 min-h-screen font-sans">
+        <div className="bg-stone-800 text-stone-200 min-h-screen font-sans"                 style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/leather.png')`}}>
             <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
                 {/* Header & Tab Navigation */}
                 <header className="text-center mb-8">
