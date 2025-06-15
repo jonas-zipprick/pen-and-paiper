@@ -33,7 +33,7 @@ app.add_middleware(
 # --- Your Model Loading Logic ---
 MODEL_NAME = "distil-whisper/distil-large-v3.5-ct2"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
-COMPUTE_TYPE = "float16"
+COMPUTE_TYPE = "float32"
 MODEL_PATH = os.getenv("WHISPER_MODEL_PATH", "./whisper_models")
 TRANSCRIPTION_ENDPOINT = os.getenv("TRANSCRIPTION_ENDPOINT", "http://localhost:8002/transcriptions")
 
@@ -156,7 +156,7 @@ async def get_index():
         html_content = f.read()
     
     # Replace the hardcoded WebSocket URL with the one from environment variables
-    websocket_url = os.getenv("WEBSOCKET_URL", "ws://localhost:8000/listen")
+    websocket_url = 'wss://{domain}/whisper/listen'.format(domain = os.getenv("WORKSPACE_DEV_DOMAIN", "localhost:8000"))
     html_content = html_content.replace(
         'const WEBSOCKET_URL = \'ws://localhost:8000/listen\';',
         f'const WEBSOCKET_URL = \'{websocket_url}\';'
