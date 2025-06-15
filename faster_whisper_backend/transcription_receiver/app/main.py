@@ -164,7 +164,7 @@ async def get_transcriptions():
     
     return html_content
 
-@app.get("/health")
+@app.get("/")
 async def health_check():
     """Health check endpoint."""
     return {

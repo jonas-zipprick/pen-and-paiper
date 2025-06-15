@@ -1,12 +1,16 @@
 schemaVersion: v0.2
 prepare:
   steps:
-    - name: Install root
+    - name: Install uv
       command: nix-env -iA nixpkgs.uv
-    - command: uv python install 3.10.0
-    - command: cd mistral-client && uv sync
-    - name: setup frontend
+    - name: Install python
+      command: uv python install 3.10.0
+    - name: uv sync mistral-client
+      command: cd mistral-client && uv sync
+    - name: yarn install frontend
       command: cd frontend && yarn install
+    - name: uv sync faster_whisper_backend
+      command: cd faster_whisper_backend && uv sync
 test:
   steps: []
 run:
@@ -29,4 +33,14 @@ run:
     isPublic: true
     network:
       path: /
+      stripPath: true
+  faster-whisper-backend:
+    steps:
+      - command: cd faster_whisper_backend && uv run uvicorn app.main:app --host 0.0.0.0
+          --port 3000
+    plan: 8
+    replicas: 1
+    isPublic: true
+    network:
+      path: /whisper
       stripPath: true
