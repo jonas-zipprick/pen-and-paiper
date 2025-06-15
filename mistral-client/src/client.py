@@ -3,14 +3,14 @@ import asyncio
 import os
 import json
 import time
+from fastapi import BackgroundTasks, FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 
 from mistralai import Mistral
 from mistralai.extra.run.context import RunContext
 from mistralai.extra.mcp.sse import MCPClientSSE, SSEServerParams
 from mistralai.types import BaseModel
 
-from pathlib import Path
-from fastapi import BackgroundTasks, FastAPI, WebSocket, WebSocketDisconnect
+from extract_text import process_pdf_bytes, extract_pages_from_pdf, store_pages_in_chroma, query_collection
 
 class ConnectionManager:
     def __init__(self):
@@ -42,33 +42,46 @@ class DmTip(BaseModel):
     relatedGameRule: str
     whatCouldHappenNext: str
 
+class RaQuery(BaseModel):
+    query: str
+
 client = Mistral(api_key)
 agent = client.beta.agents.create(
     model=MODEL,
     description="Assists the Dungeon Master in a Dungeons and Dragons game",
     name="Dungeon Master Assistant"
 )
-mcp_client = MCPClientSSE(sse_params=SSEServerParams(url=server_url, timeout=100))
 async def setup_run_ctx():
     conversation_id = client.beta.conversations.start(
         agent_id=agent.id,
         inputs= '''
         You are an assistant to a Dungeon Master of a Dungeons and Dragons 5E Game.
-        Every 10 seconds, I will send you what the people in the room
-        have said, as they play the game.
-        Your job is to respond with tips to the game master that he can use as
-        he is leading the game.
+
+        Your overall job is to respond with tips to the game master that he can
+        use as he is leading the game.
+
         Remember that DnD games can be quite fast and chaotic, so keep the tips
         to-the-point so that they can be read by the Game Master on the fly.
         However, if you have relevant information and you are confident about
         that it is correct, don't hesitate to include it.
         while he is doing other things.
+
         Use markdown to format your tips.
+
         Don't just base your tip on the last 10 seconds of what was being said,
         but instead think about the big picture of the conversation (the last 1
         to 10 minutes of talk).
 
-        Your responses should have the following content (square brackets must be replaced by you with actual content):
+        Every 10 seconds, I will send you what the people in the room have said,
+        as they play the game.
+        This is what I call "first prompt".
+        Your response to this first prompt has to be query to a vector database
+        that contains background information about the current game like rule books,
+        adventure books, player character-sheets.
+        I will then query that information for you and give it to you in a second prompt.
+        Your response to that second prompt should be the actual tip and have
+        the following content (square brackets must be replaced by you with
+        actual content):
 
         1) "readThisTextToYourPlayers":
             This is supposed to contain a text that the Dungeon Master can read to
@@ -108,17 +121,14 @@ async def setup_run_ctx():
             (Adventure: Curse of Stradh p.120)
             "
 
-        That's all.
-        Now I will start sending you what has been said in the room, every 10 seconds.
+        That's all. Let's start.
         '''
     ).conversation_id
     ctx = RunContext(
         conversation_id=conversation_id,
         agent_id=agent.id,
-        output_format=DmTip,
         continue_on_fn_error=True,
     )
-    await ctx.register_mcp_client(mcp_client=mcp_client)
     return ctx
 
 run_ctx_co = setup_run_ctx()
@@ -144,12 +154,31 @@ async def process_talk():
         print(this_talk)
         if run_ctx is None:
             run_ctx = await run_ctx_co
-        res = await client.beta.conversations.run_async(
+        query_res = await client.beta.conversations.run_async(
             run_ctx=run_ctx,
-            inputs=this_talk,
+            output_format=RaQuery,
+            inputs='''First prompt, this was the talk:
+
+            >>>
+            {this_talk}
+            <<<
+
+            Please respond with the query now
+            '''.format(this_talk=this_talk),
+        )
+        print(query_res)
+        db_res = query_collection(collection_name, query_res.output_entries[0].content, int(n_results))
+        print(db_res)
+        tip_res = await client.beta.conversations.run_async(
+            run_ctx=run_ctx,
+            output_format=DmTip,
+            inputs='''Second prompt, here is the information of the database: {db_res}
+
+            Please respond with the tip now
+            '''.format(db_res=db_res),
         )
         print('sending update')
-        for entry in res.output_entries:
+        for entry in tip_res.output_entries:
             content = json.loads(entry.content)
             print(content)
             await manager.broadcast("content:")
@@ -182,3 +211,38 @@ async def new_subscription(websocket: WebSocket):
             await websocket.receive_json()
     except WebSocketDisconnect:
         manager.disconnect(websocket)
+
+
+@app.post("/upload-pdf")
+async def upload_pdf(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    collection_name: str = Form(...)
+):
+    """Upload a PDF file and store its contents in ChromaDB asynchronously."""
+    if not file.filename.lower().endswith('.pdf'):
+        return {"error": "File must be a PDF"}
+    content = await file.read()
+    pdf_name = os.path.splitext(file.filename)[0]
+
+    # Schedule background task
+    background_tasks.add_task(process_pdf_bytes, content, pdf_name, collection_name)
+
+    return {
+        "message": "PDF received. Processing in background.",
+        "pdf_name": pdf_name,
+        "collection": collection_name
+    }
+
+@app.post("/query-text")
+async def query_text(
+    collection_name: str = Form(...),
+    query: str = Form(...),
+    n_results: int = Form(3)
+):
+    """Query a collection for relevant documents and return texts."""
+    try:
+        docs = query_collection(collection_name, query, int(n_results))
+        return {"results": docs, "count": len(docs)}
+    except Exception as e:
+        return {"error": str(e)}

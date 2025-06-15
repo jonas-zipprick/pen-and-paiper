@@ -10,7 +10,7 @@ import { StreamerView } from './components/Stream';
 import { FloatingRecorderWidget } from './components/Recorder';
 
 export default function App() {
-    const [activeTab, setActiveTab] = useState<Tab>('uploader');
+    const [activeTab, setActiveTab] = useState<Tab>('streamer');
 
     return (
         <div className="bg-stone-800 text-stone-200 min-h-screen font-sans">
@@ -23,21 +23,21 @@ export default function App() {
                     <p className="text-stone-400 mt-2">Your Digital Scribe for Adventures & Archives</p>
                     <nav className="mt-6 flex justify-center border-b border-stone-700">
                         <TabButton
-                            label="Admin Panel"
-                            isActive={activeTab === 'uploader'}
-                            onClick={() => setActiveTab('uploader')}
-                        />
-                        <TabButton
                             label="Live Assistant"
                             isActive={activeTab === 'streamer'}
                             onClick={() => setActiveTab('streamer')}
+                        />
+                        <TabButton
+                            label="Admin Panel"
+                            isActive={activeTab === 'uploader'}
+                            onClick={() => setActiveTab('uploader')}
                         />
                     </nav>
                 </header>
 
                 <main>
-                    {activeTab === 'uploader' && <UploaderView />}
                     {activeTab === 'streamer' && <StreamerView />}
+                    {activeTab === 'uploader' && <UploaderView />}
                 </main>
             </div>
             
