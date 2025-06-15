@@ -10,7 +10,7 @@ from mistralai.extra.run.context import RunContext
 from mistralai.extra.mcp.sse import MCPClientSSE, SSEServerParams
 from mistralai.types import BaseModel
 
-from extract_text import process_pdf_bytes, extract_pages_from_pdf, store_pages_in_chroma, query_collection
+from extract_text import process_pdf_bytes, list_chroma_collections, query_collection
 
 class ConnectionManager:
     def __init__(self):
@@ -244,5 +244,14 @@ async def query_text(
     try:
         docs = query_collection(collection_name, query, int(n_results))
         return {"results": docs, "count": len(docs)}
+    except Exception as e:
+        return {"error": str(e)}
+
+@app.get("/collections")
+async def list_collections():
+    """Return a list of all ChromaDB collections."""
+    try:
+        cols = list_chroma_collections()
+        return {"collections": [c.name for c in cols]}
     except Exception as e:
         return {"error": str(e)}
