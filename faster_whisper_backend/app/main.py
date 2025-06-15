@@ -164,7 +164,7 @@ async def get_index():
     
     return html_content
 
-@app.get("/health")
+@app.get("/")
 async def health_check():
     return {
         "status": "healthy",
