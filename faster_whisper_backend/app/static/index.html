@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whisper Transcription Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        #button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 15px 32px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin: 4px 2px;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            transition: background-color 0.3s;
+        }
+        #button.recording {
+            background-color: #f44336;
+        }
+        #transcript {
+            margin-top: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            min-height: 100px;
+            background-color: #fafafa;
+            white-space: pre-wrap;
+        }
+        #status {
+            margin-top: 10px;
+            color: #666;
+        }
+        .word {
+            display: inline-block;
+            margin: 0 2px;
+            padding: 2px 4px;
+            border-radius: 3px;
+            transition: background-color 0.2s;
+        }
+        .word:hover {
+            background-color: #e3f2fd;
+            cursor: pointer;
+        }
+        .word.active {
+            background-color: #bbdefb;
+        }
+        .timestamp {
+            font-size: 0.8em;
+            color: #666;
+            margin-left: 4px;
+        }
+        #connection-status {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .connected {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+        }
+        .disconnected {
+            background-color: #ffebee;
+            color: #c62828;
+        }
+        #debug {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Whisper Transcription Test</h1>
+        <div id="connection-status" class="disconnected">Disconnected</div>
+        <button id="button">Start Recording</button>
+        <div id="status">Click to start recording.</div>
+        <div id="transcript"></div>
+        <div id="debug"></div>
+    </div>
+
+    <!-- ======================= START OF MODIFIED SCRIPT ======================= -->
+    <script>
+        const button = document.getElementById('button');
+        const transcriptDiv = document.getElementById('transcript');
+        const statusDiv = document.getElementById('status');
+        const connectionStatus = document.getElementById('connection-status');
+        const debugDiv = document.getElementById('debug');
+    
+        function log(message) {
+            const timestamp = new Date().toISOString().split('T')[1].split('.')[0];
+            debugDiv.textContent += `[${timestamp}] ${message}\n`;
+            debugDiv.scrollTop = debugDiv.scrollHeight;
+            console.log(message);
+        }
+    
+        const WEBSOCKET_URL = 'ws://localhost:8000/listen';
+    
+        let socket;
+        let isRecording = false;
+        let recordingInterval;
+        let userAudioStream; // This will hold the single audio stream for the session
+        const CHUNK_DURATION = 3000; // 3 seconds
+    
+        button.addEventListener('click', () => {
+            if (isRecording) {
+                stopOverallRecording();
+            } else {
+                startOverallRecording();
+            }
+        });
+    
+        function startOverallRecording() {
+            isRecording = true;
+            button.textContent = 'Stop Recording';
+            button.classList.add('recording');
+            transcriptDiv.innerHTML = '';
+            statusDiv.textContent = 'Connecting...';
+            log('Attempting to connect to WebSocket...');
+    
+            socket = new WebSocket(WEBSOCKET_URL);
+    
+            socket.onopen = () => {
+                log('WebSocket connection opened.');
+                connectionStatus.textContent = 'Connected';
+                connectionStatus.className = 'connected';
+                statusDiv.textContent = 'Requesting microphone access...';
+    
+                // STEP 1: Get the microphone stream ONCE at the beginning.
+                navigator.mediaDevices.getUserMedia({ audio: true })
+                    .then(stream => {
+                        log('Microphone access granted.');
+                        statusDiv.textContent = 'Connected. Start speaking!';
+                        userAudioStream = stream; // Store the stream globally for the session
+    
+                        // STEP 2: Now that we have the stream, start the recording loop.
+                        recordAndSendChunk(); // Record the first chunk immediately
+                        recordingInterval = setInterval(recordAndSendChunk, CHUNK_DURATION);
+                    })
+                    .catch(err => {
+                        log(`FATAL: Microphone error: ${err.message}`);
+                        stopOverallRecording();
+                    });
+            };
+    
+            socket.onmessage = (event) => {
+                log('Received message from server');
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'transcription' && data.segments) {
+                        data.segments.forEach(segment => {
+                            const segmentDiv = document.createElement('div');
+                            segmentDiv.className = 'segment';
+                            segment.words.forEach(word => {
+                                const wordSpan = document.createElement('span');
+                                wordSpan.className = 'word';
+                                wordSpan.textContent = word.word + ' ';
+                                wordSpan.title = `${word.start.toFixed(2)}s - ${word.end.toFixed(2)}s`;
+                                segmentDiv.appendChild(wordSpan);
+                            });
+                            transcriptDiv.appendChild(segmentDiv);
+                            transcriptDiv.scrollTop = transcriptDiv.scrollHeight;
+                        });
+                    }
+                } catch (err) { log(`Error parsing server message: ${err.message}`); }
+            };
+    
+            socket.onclose = (event) => { log(`WebSocket closed. Code: ${event.code}`); stopOverallRecording(); };
+            socket.onerror = (error) => { log('WebSocket error occurred.'); stopOverallRecording(); };
+        }
+    
+        function recordAndSendChunk() {
+            if (!isRecording || !userAudioStream) return;
+            log('Starting new recording chunk from existing stream...');
+            
+            // STEP 3: Create a NEW recorder instance from the EXISTING stream.
+            const recorder = new MediaRecorder(userAudioStream, { mimeType: 'audio/webm' });
+            const audioChunks = [];
+    
+            recorder.ondataavailable = event => {
+                audioChunks.push(event.data);
+            };
+    
+            recorder.onstop = () => {
+                const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                if (audioBlob.size > 0 && socket && socket.readyState === WebSocket.OPEN) {
+                    log(`Sending complete audio file (${audioBlob.size} bytes)...`);
+                    socket.send(audioBlob);
+                }
+            };
+    
+            recorder.start();
+            setTimeout(() => {
+                if (recorder.state === 'recording') {
+                    recorder.stop();
+                }
+            }, CHUNK_DURATION);
+        }
+    
+        function stopOverallRecording() {
+            if (!isRecording) return;
+            log('Stopping overall recording session.');
+            isRecording = false;
+    
+            clearInterval(recordingInterval); // Stop the loop
+    
+            // STEP 4: Stop the master audio stream to release the microphone.
+            if (userAudioStream) {
+                userAudioStream.getTracks().forEach(track => track.stop());
+                userAudioStream = null;
+            }
+            
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+            }
+            
+            button.textContent = 'Start Recording';
+            button.classList.remove('recording');
+            statusDiv.textContent = 'Click to start recording.';
+            connectionStatus.textContent = 'Disconnected';
+            connectionStatus.className = 'disconnected';
+        }
+    </script>
+    <!-- ======================= END OF MODIFIED SCRIPT ======================= -->
+</body>
+</html>
