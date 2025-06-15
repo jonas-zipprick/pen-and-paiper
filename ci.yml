@@ -5,6 +5,8 @@ prepare:
       command: nix-env -iA nixpkgs.uv
     - command: uv python install 3.10.0
     - command: cd mistral-client && uv sync
+    - name: setup frontend
+      command: cd frontend && yarn install
 test:
   steps: []
 run:
@@ -12,6 +14,16 @@ run:
     steps:
       - command: cd mistral-client && uv run fastapi run src/client.py --host 0.0.0.0
           --port 3000
+    plan: 8
+    replicas: 1
+    isPublic: true
+    network:
+      path: /assistant
+      stripPath: true
+  frontend:
+    steps:
+      - name: run frontend
+        command: cd frontend && yarn start --host
     plan: 8
     replicas: 1
     isPublic: true

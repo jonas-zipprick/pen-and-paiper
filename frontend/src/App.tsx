@@ -166,7 +166,7 @@ const UploaderView = () => {
 // --- Streamer View Component (Unchanged) ---
 const StreamerView = () => {
     // NOTE: This WebSocket URL is for demonstration. Replace with your actual server address.
-    const WEBSOCKET_URL = "wss://echo.websocket.org/";
+    const WEBSOCKET_URL = "wss://67934-3000.2.codesphere.com/assistant/ws";
     const [textChunk, setTextChunk] = useState<string>('Awaiting transmission from the ether...');
     const [status, setStatus] = useState<SocketStatus>('Connecting');
     const ws = useRef<WebSocket | null>(null);
