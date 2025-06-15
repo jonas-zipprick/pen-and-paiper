@@ -58,10 +58,8 @@ async def setup_run_ctx():
         use as he is leading the game.
 
         Remember that DnD games can be quite fast and chaotic, so keep the tips
-        to-the-point so that they can be read by the Game Master on the fly.
-        However, if you have relevant information and you are confident about
-        that it is correct, don't hesitate to include it.
-        while he is doing other things.
+        to-the-point so that they can be read by the Game Master on the fly while 
+		he is doing other things.
 
         Use markdown to format your tips.
 
@@ -110,8 +108,9 @@ async def setup_run_ctx():
             The dead man is the famous vampire from Netherwinter called **"Count Dragu"**.
             He is **only playing dead**. Once the players leave the room again, he will follow them.
 
-            >  [insert short quote from adventure book here, like: Count Dragu is a vampire from Netherwinter who...]
+            > [insert short quote from adventure book here, like: Count Dragu is a vampire from Netherwinter who...]
             (Adventure: Curse of Stradh p.120)
+
             "
 
         That's all. Let's start.
@@ -153,9 +152,8 @@ async def process_talk():
             inputs=this_talk,
         )
         for entry in res.output_entries:
-            content = json.loads(entry.content)
-            print(content)
-            await manager.broadcast(json.dumps(content))
+            print(entry.content)
+            await manager.broadcast(entry.content)
 
 app = FastAPI(
 	docs_url='/assistant/docs',
@@ -169,10 +167,16 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
+all_talk = ''
 @app.post("/assistant/")
 async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
     global unprocessed_talk
-    unprocessed_talk += '\n' + talk.words_spoken
+    global all_talk
+    short_talk = talk.words_spoken[len(all_talk):]
+    all_talk = talk.words_spoken
+    print('short talk')
+    print(short_talk)
+    unprocessed_talk += '\n' + short_talk
     if not is_running:
         background_tasks.add_task(process_talk)
     return {"message": "Notification sent in the background"}
