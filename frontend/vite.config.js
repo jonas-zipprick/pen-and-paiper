@@ -8,7 +8,8 @@ export default defineConfig(({command}) => ({
 	server: {
         port: 3000,
 		allowedHosts: [
-			'67934-3000.2.codesphere.com'
+			'67934-3000.2.codesphere.com',
+			'pnp.jcing.de'
 		]
 		
     },
