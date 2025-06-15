@@ -7,6 +7,10 @@ export default defineConfig(({command}) => ({
     publicDir: path.join(__dirname, 'src', 'public'),
 	server: {
         port: 3000,
+		allowedHosts: [
+			'67934-3000.2.codesphere.com'
+		]
+		
     },
     build: {
         emptyOutDir: true,
