@@ -2,38 +2,26 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Mic, StopCircle, AlertTriangle } from 'lucide-react';
 import type { RecordingStatus } from '../types';
 
-// The backend WebSocket URL from your HTML file
-const WEBSOCKET_URL = 'ws://213.173.110.22:18984/listen';
-// The duration of each audio chunk to be sent to the backend
+const WEBSOCKET_URL = 'wss://5jmyry5iz1jpar-8080.proxy.runpod.net/listen';
 const CHUNK_DURATION = 3000; // 3 seconds
 
 export const FloatingRecorderWidget = () => {
-    // 'status' tracks the current state of the recorder
     const [status, setStatus] = useState<RecordingStatus>('idle');
-    // 'error' holds any error message to be displayed to the user
     const [error, setError] = useState<string | null>(null);
 
-    // useRef is used to hold references to objects that don't need to trigger re-renders
-    const socketRef = useRef<WebSocket | null>(null); // Holds the WebSocket connection
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null); // Holds the main MediaRecorder instance
-    const audioStreamRef = useRef<MediaStream | null>(null); // Holds the microphone audio stream
-    const recordingIntervalRef = useRef<number | null>(null); // Holds the interval for sending chunks
+    const socketRef = useRef<WebSocket | null>(null);
+    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+    const audioStreamRef = useRef<MediaStream | null>(null);
+    
+    // Key Change: Removed recordingIntervalRef as it's no longer needed.
 
-    /**
-     * This useEffect hook handles cleanup when the component unmounts.
-     * It ensures that the recording is stopped, the microphone stream is released,
-     * and the WebSocket connection is closed to prevent memory leaks.
-     */
     useEffect(() => {
+        // Cleanup function remains the same and is very important.
         return () => {
             stopRecording();
         };
     }, []);
 
-    /**
-     * Toggles the recording state.
-     * If not recording, it starts. If recording, it stops.
-     */
     const toggleRecording = () => {
         if (status === 'recording') {
             stopRecording();
@@ -42,12 +30,6 @@ export const FloatingRecorderWidget = () => {
         }
     };
 
-    /**
-     * Starts the recording process.
-     * 1. Sets status to 'pending'
-     * 2. Creates a new WebSocket connection.
-     * 3. Sets up WebSocket event handlers (onopen, onclose, onerror).
-     */
     const startRecording = () => {
         setError(null);
         setStatus('permission-pending');
@@ -56,15 +38,31 @@ export const FloatingRecorderWidget = () => {
         socketRef.current.onopen = async () => {
             console.log('WebSocket connection opened.');
             try {
-                // Get microphone access
                 const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
                 audioStreamRef.current = stream;
                 setStatus('recording');
 
-                // Start sending audio chunks periodically
-                recordingIntervalRef.current = setInterval(sendAudioChunk, CHUNK_DURATION);
-                // Send the first chunk immediately
-                sendAudioChunk(); 
+                // Key Change: Create the MediaRecorder once and set its event handlers.
+                mediaRecorderRef.current = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+                // Key Change: This event handler is now the core of our sending logic.
+                // It fires automatically every CHUNK_DURATION.
+                mediaRecorderRef.current.ondataavailable = (event) => {
+                    if (event.data.size > 0 && socketRef.current?.readyState === WebSocket.OPEN) {
+                        console.log(`Sending audio chunk of size ${event.data.size}`);
+                        socketRef.current.send(event.data);
+                    }
+                };
+                
+                mediaRecorderRef.current.onstop = () => {
+                    console.log("MediaRecorder stopped.");
+                    // Clean up stream and socket in the main stopRecording function
+                };
+
+                // Key Change: Start the recorder with a timeslice.
+                // This tells it to trigger 'ondataavailable' every 3000ms.
+                mediaRecorderRef.current.start(CHUNK_DURATION);
+
             } catch (err) {
                 console.error('Error getting microphone access:', err);
                 setError("Microphone access was denied. Please enable it in your browser settings.");
@@ -77,81 +75,33 @@ export const FloatingRecorderWidget = () => {
 
         socketRef.current.onclose = () => {
             console.log('WebSocket connection closed.');
-            // If the connection closes unexpectedly, stop the recording
-            if (status === 'recording') {
-                stopRecording();
+            // Ensure we transition state correctly if the connection closes unexpectedly.
+            if (status === 'recording' || status === 'permission-pending') {
+               stopRecording();
             }
         };
 
-        socketRef.current.onerror = (error) => {
-            console.error('WebSocket error:', error);
+        socketRef.current.onerror = (event) => {
+            console.error('WebSocket error:', event);
             setError('A connection error occurred. Please try again.');
             setStatus('error');
-            if (status === 'recording') {
-                stopRecording();
-            }
+            stopRecording(); // Stop everything on error
         };
         
-        // You can handle incoming messages from the server here if needed
         socketRef.current.onmessage = (event) => {
             console.log('Received message from server:', event.data);
-            // Example: const data = JSON.parse(event.data);
-            // Update your UI with the transcription data
         };
     };
 
-    /**
-     * Sends a chunk of audio data over the WebSocket connection.
-     * This function is called periodically by setInterval.
-     */
-    const sendAudioChunk = () => {
-        if (!audioStreamRef.current || socketRef.current?.readyState !== WebSocket.OPEN) {
-            return;
-        }
-        
-        // Use the single, continuous audio stream
-        mediaRecorderRef.current = new MediaRecorder(audioStreamRef.current, { mimeType: 'audio/webm' });
-        const audioChunks: Blob[] = [];
+    // Key Change: The sendAudioChunk function is no longer needed.
 
-        mediaRecorderRef.current.ondataavailable = event => {
-            audioChunks.push(event.data);
-        };
-
-        mediaRecorderRef.current.onstop = () => {
-            const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-            if (audioBlob.size > 0 && socketRef.current?.readyState === WebSocket.OPEN) {
-                console.log(`Sending audio chunk of size ${audioBlob.size}`);
-                socketRef.current.send(audioBlob);
-            }
-        };
-
-        mediaRecorderRef.current.start();
-        
-        // Stop the recorder after the specified chunk duration to trigger onstop
-        setTimeout(() => {
-            if (mediaRecorderRef.current?.state === 'recording') {
-                mediaRecorderRef.current.stop();
-            }
-        }, CHUNK_DURATION);
-    };
-
-    /**
-     * Stops the recording process.
-     * 1. Clears the recording interval.
-     * 2. Stops the MediaRecorder.
-     * 3. Releases the microphone track.
-     * 4. Closes the WebSocket connection.
-     * 5. Resets the state to 'idle'.
-     */
     const stopRecording = () => {
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-            recordingIntervalRef.current = null;
-        }
-
+        // Key Change: No interval to clear.
+        
         if (mediaRecorderRef.current?.state === 'recording') {
-            mediaRecorderRef.current.stop();
+            mediaRecorderRef.current.stop(); // This will trigger one last ondataavailable
         }
+        mediaRecorderRef.current = null;
 
         if (audioStreamRef.current) {
             audioStreamRef.current.getTracks().forEach(track => track.stop());
@@ -161,13 +111,15 @@ export const FloatingRecorderWidget = () => {
         if (socketRef.current?.readyState === WebSocket.OPEN) {
             socketRef.current.close();
         }
+        socketRef.current = null;
         
-        setStatus('idle');
+        // Only set status to idle if it's not already in an error state
+        if (status !== 'error') {
+            setStatus('idle');
+        }
     };
 
-    /**
-     * Renders the correct icon based on the current recording status.
-     */
+    // --- No changes to UI rendering functions (getIcon, getButtonClass, return statement) ---
     const getIcon = () => {
         switch (status) {
             case 'recording':
@@ -182,9 +134,6 @@ export const FloatingRecorderWidget = () => {
         }
     };
     
-     /**
-     * Returns the appropriate button color based on the status.
-     */
     const getButtonClass = () => {
         switch (status) {
             case 'recording':
@@ -218,9 +167,3 @@ export const FloatingRecorderWidget = () => {
         </div>
     );
 };
-
-// You might need to define this type if it's not already in your project
-// in a file like 'src/types.ts'
-/*
-export type RecordingStatus = 'idle' | 'permission-pending' | 'recording' | 'stopped' | 'error';
-*/
