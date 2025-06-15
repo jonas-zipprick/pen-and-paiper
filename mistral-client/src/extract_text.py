@@ -81,7 +81,8 @@ def get_chroma_client():
 def get_embedding_function():
     """Get the Nomic embedding function."""
     return embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name="nomic-ai/nomic-embed-text-v1.5"
+        model_name="nomic-ai/nomic-embed-text-v1.5",
+		trust_remote_code=True
     )
 
 def get_or_create_collection(collection_name: str):
