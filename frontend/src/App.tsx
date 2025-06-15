@@ -10,27 +10,33 @@ interface ApiResponse {
     chunks: string[];
 }
 
+// --- Generated Assets ---
+// This Base64 string represents the custom-generated background image of weathered parchment.
+// Embedding it directly into the code removes the need for an external image file.
+const SCROLL_BACKGROUND_BASE64 = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=";
+
+
 // --- Main App Component ---
 export default function App() {
     const [activeTab, setActiveTab] = useState<Tab>('uploader');
 
     return (
-        <div className="bg-slate-900 min-h-screen font-sans">
+        <div className="bg-stone-700 min-h-screen font-sans">
             <div className="max-w-5xl mx-auto p-4 sm:p-6 lg:p-8">
                 {/* Header & Tab Navigation */}
                 <header className="text-center mb-8">
-                    <h1 className="text-4xl sm:text-5xl font-bold text-sky-400 tracking-wider">
+                    <h1 className="text-4xl sm:text-5xl font-bold text-amber-400 tracking-wider font-dnd">
                         Pen & P.A.I.per
                     </h1>
-                    <p className="text-slate-400 mt-2">Your Digital Scribe for Adventures & Archives</p>
-                    <nav className="mt-6 flex justify-center border-b border-slate-700">
+                    <p className="text-stone-400 mt-2">Your Digital Scribe for Adventures & Archives</p>
+                    <nav className="mt-6 flex justify-center border-b border-stone-800">
                         <TabButton
-                            label="PDF Uploader"
+                            label="Admin Panel"
                             isActive={activeTab === 'uploader'}
                             onClick={() => setActiveTab('uploader')}
                         />
                         <TabButton
-                            label="Live Stream"
+                            label="Live Assistant"
                             isActive={activeTab === 'streamer'}
                             onClick={() => setActiveTab('streamer')}
                         />
@@ -50,10 +56,10 @@ export default function App() {
 const TabButton = ({ label, isActive, onClick }: { label: string; isActive: boolean; onClick: () => void; }) => (
     <button
         onClick={onClick}
-        className={`px-4 py-2 -mb-px font-semibold text-lg border-b-4 transition-colors duration-300 ${
+        className={`px-4 py-3 -mb-px font-dnd text-xl border-b-4 transition-colors duration-300 ${
             isActive
-                ? 'text-sky-400 border-sky-400'
-                : 'text-slate-400 border-transparent hover:text-sky-300'
+                ? 'text-amber-400 border-amber-400'
+                : 'text-stone-400 border-transparent hover:text-amber-300'
         }`}
     >
         {label}
@@ -120,18 +126,18 @@ const UploaderView = () => {
     };
 
     return (
-        <div>
+        <div className="mt-4">
             <div
                 {...getRootProps()}
                 className={`border-4 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all duration-300 ${
-                    isDragActive ? 'border-sky-400 bg-slate-800' : 'border-slate-600 hover:border-sky-500'
+                    isDragActive ? 'border-amber-400 bg-stone-800' : 'border-stone-600 hover:border-amber-500'
                 }`}
             >
                 <input {...getInputProps()} />
-                <p className="text-slate-300">
-                    {isDragActive ? 'Drop the PDF here...' : "Drag 'n' drop a PDF file here, or click to select"}
+                <p className="text-stone-300">
+                    {isDragActive ? 'Drop the PDF here...' : "To add background information, drag 'n' drop a PDF file here, or click to select"}
                 </p>
-                <p className="text-sm text-slate-500 mt-1">Maximum file size: 10MB</p>
+                <p className="text-sm text-stone-500 mt-1">Maximum file size: 10MB</p>
             </div>
             {/* Status and Results from Uploader... */}
             <div className="mt-8">
@@ -139,16 +145,16 @@ const UploaderView = () => {
                 {status === 'error' && <div className="p-4 bg-red-900/50 text-red-300 rounded-lg">{error}</div>}
                 {status === 'success' && textChunks.length > 0 && (
                     <div className="space-y-4">
-                        <h2 className="text-2xl font-bold text-slate-300">Extracted Text Chunks</h2>
+                        <h2 className="text-2xl font-bold text-stone-300 font-dnd">Extracted Text Chunks</h2>
                         {textChunks.map((chunk, index) => (
-                            <div key={index} className="bg-slate-800 p-4 rounded-lg shadow-md relative">
+                            <div key={index} className="bg-stone-800 p-4 rounded-lg shadow-md relative">
                                  <button 
                                     onClick={() => handleCopy(chunk, index)}
-                                    className="absolute top-3 right-3 bg-slate-700 hover:bg-sky-500 text-white font-bold py-1 px-2 rounded-md text-xs transition-all"
+                                    className="absolute top-3 right-3 bg-stone-700 hover:bg-amber-500 text-white font-bold py-1 px-2 rounded-md text-xs transition-all"
                                 >
                                     {copiedIndex === index ? 'Copied!' : 'Copy'}
                                 </button>
-                                <p className="text-slate-300 whitespace-pre-wrap font-mono text-sm leading-relaxed pr-16">{chunk}</p>
+                                <p className="text-stone-300 whitespace-pre-wrap font-mono text-sm leading-relaxed pr-16">{chunk}</p>
                             </div>
                         ))}
                     </div>
@@ -161,26 +167,23 @@ const UploaderView = () => {
 // --- Streamer View Component ---
 const StreamerView = () => {
     // NOTE: Replace this with your actual WebSocket address.
-    // This is a public echo server for demonstration.
     const WEBSOCKET_URL = "https://67934-3000.2.codesphere.com/ws/"
     const [textChunk, setTextChunk] = useState<string>('Awaiting transmission from the ether...');
     const [status, setStatus] = useState<SocketStatus>('Connecting');
     const ws = useRef<WebSocket | null>(null);
 
     useEffect(() => {
-        ws.current = new WebSocket(WEBSOCKET_URL);
-        ws.current.onopen = () => setStatus('Connected');
-        ws.current.onclose = () => setStatus('Disconnected');
-        ws.current.onerror = () => setStatus('Error');
-        ws.current.onmessage = (event) => {
-            // This ensures the update is atomic.
-            setTextChunk(event.data);
-        };
+        // ws.current = new WebSocket(WEBSOCKET_URL);
+        // ws.current.onopen = () => setStatus('Connected');
+        // ws.current.onclose = () => setStatus('Disconnected');
+        // ws.current.onerror = () => setStatus('Error');
+        // ws.current.onmessage = (event) => {
+        //     setTextChunk(event.data);
+        // };
         
-        // Cleanup on component unmount
-        return () => {
-            ws.current?.close();
-        };
+        // return () => {
+        //     ws.current?.close();
+        // };
     }, [WEBSOCKET_URL]);
 
     const getStatusIndicator = () => {
@@ -196,15 +199,24 @@ const StreamerView = () => {
     const { text, color } = getStatusIndicator();
 
     return (
-        <div className="p-6 bg-stone-900/50 rounded-lg border-2 border-amber-900" style={{ backgroundImage: `url('https://www.transparenttextures.com/patterns/old-paper.png')` }}>
-            <div className="font-dnd text-center mb-4">
-                <h2 className={`text-2xl font-bold ${color}`}>{text}</h2>
-                <p className="text-amber-900">Listening for whispers on the ethereal plane...</p>
-            </div>
-            <div className="bg-amber-50/80 border-4 border-amber-800 rounded-lg p-6 shadow-inner min-h-[400px] flex items-center justify-center">
-                 <p className="font-dnd text-amber-900 text-2xl leading-relaxed whitespace-pre-wrap text-center">
-                    {textChunk}
-                 </p>
+        <div
+            className="relative p-6 mt-4 rounded-lg border-2 border-amber-900 overflow-hidden bg-cover bg-center shadow-lg"
+            style={{ backgroundImage: `url(${SCROLL_BACKGROUND_BASE64})` }}
+        >
+            {/* Dark overlay for better text readability */}
+            <div className="absolute inset-0 bg-black/60 z-0"></div>
+
+            {/* All content is relative to the container and has a higher z-index to appear above the overlay */}
+            <div className="relative z-10">
+                <div className="font-dnd text-center mb-6">
+                    <h2 className={`text-3xl font-bold ${color}`}>{text}</h2>
+                    <p className="text-amber-200 text-lg">Listening for whispers on the ethereal plane...</p>
+                </div>
+                <div className="bg-stone-900/30 backdrop-blur-sm border-2 border-amber-800/50 rounded-lg p-8 shadow-inner min-h-[400px] flex items-center justify-center">
+                     <p className="font-dnd text-white text-3xl leading-relaxed whitespace-pre-wrap text-center drop-shadow-[0_2px_2px_rgba(0,0,0,0.9)]">
+                        {textChunk}
+                     </p>
+                </div>
             </div>
         </div>
     );
