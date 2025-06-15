@@ -81,7 +81,7 @@ def get_chroma_client():
 def get_embedding_function():
     """Get the Nomic embedding function."""
     return embedding_functions.SentenceTransformerEmbeddingFunction(
-        model_name="nomic-ai/nomic-bert-2048",
+        model_name="nomic-ai/nomic-embed-text-v2-moe",
 		trust_remote_code=True
     )
 
