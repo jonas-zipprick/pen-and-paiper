@@ -155,10 +155,7 @@ async def process_talk():
         for entry in res.output_entries:
             content = json.loads(entry.content)
             print(content)
-            await manager.broadcast("content:")
-            await manager.broadcast("Read this text: " + content['readThisTextToYourPlayers'])
-            await manager.broadcast("Related Rule: " + content['relatedGameRule'])
-            await manager.broadcast("What could happen Next: " + content['whatCouldHappenNext'])
+            await manager.broadcast(json.dumps(content))
 
 app = FastAPI(
 	docs_url='/assistant/docs',
