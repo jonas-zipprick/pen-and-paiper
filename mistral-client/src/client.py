@@ -7,7 +7,6 @@ from fastapi import BackgroundTasks, FastAPI, WebSocket, WebSocketDisconnect, Up
 
 from mistralai import Mistral
 from mistralai.extra.run.context import RunContext
-from mistralai.extra.mcp.sse import MCPClientSSE, SSEServerParams
 from mistralai.types import BaseModel
 
 from extract_text import process_pdf_bytes, list_chroma_collections, query_collection
@@ -167,7 +166,9 @@ async def process_talk():
             '''.format(this_talk=this_talk),
         )
         print(query_res)
-        db_res = query_collection(collection_name, query_res.output_entries[0].content, int(n_results))
+        default_collection_name = 'dnd-5e-core-rules'
+        n_results = 2
+        db_res = query_collection(default_collection_name, query_res.output_entries[0].content, int(n_results))
         print(db_res)
         tip_res = await client.beta.conversations.run_async(
             run_ctx=run_ctx,
@@ -186,9 +187,12 @@ async def process_talk():
             await manager.broadcast("Related Rule: " + content['relatedGameRule'])
             await manager.broadcast("What could happen Next: " + content['whatCouldHappenNext'])
 
-app = FastAPI()
+app = FastAPI(
+	docs_url='/assistant/docs',
+	openapi_url='/assistant/openapi.json',
+)
 
-@app.post("/")
+@app.post("/assistant/")
 async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
     global unprocessed_talk
     unprocessed_talk += '\n' + talk.words_spoken
@@ -196,14 +200,14 @@ async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
         background_tasks.add_task(process_talk)
     return {"message": "Notification sent in the background"}
 
-@app.get('/')
+@app.get('/assistant/')
 async def health_check():
     global run_ctx
     if run_ctx is None:
         run_ctx = await run_ctx_co
     return {"message": "OK"}
 
-@app.websocket("/ws")
+@app.websocket("/assistant/ws")
 async def new_subscription(websocket: WebSocket):
     await manager.connect(websocket)
     try:
@@ -213,11 +217,11 @@ async def new_subscription(websocket: WebSocket):
         manager.disconnect(websocket)
 
 
-@app.post("/upload-pdf")
+@app.post("/assistant/upload-pdf")
 async def upload_pdf(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
-    collection_name: str = Form(...)
+    collection_name: str = Form(default="dnd-5e-core-rules")
 ):
     """Upload a PDF file and store its contents in ChromaDB asynchronously."""
     if not file.filename.lower().endswith('.pdf'):
@@ -234,11 +238,11 @@ async def upload_pdf(
         "collection": collection_name
     }
 
-@app.post("/query-text")
+@app.post("/assistant/query-text")
 async def query_text(
-    collection_name: str = Form(...),
+    collection_name: str = Form(default="dnd-5e-core-rules"),
     query: str = Form(...),
-    n_results: int = Form(3)
+    n_results: int = Form(default=3)
 ):
     """Query a collection for relevant documents and return texts."""
     try:
@@ -247,7 +251,8 @@ async def query_text(
     except Exception as e:
         return {"error": str(e)}
 
-@app.get("/collections")
+
+@app.get("assistant/collections")
 async def list_collections():
     """Return a list of all ChromaDB collections."""
     try:
