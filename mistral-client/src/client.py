@@ -10,7 +10,7 @@ from mistralai import Mistral
 from mistralai.extra.run.context import RunContext
 from mistralai.types import BaseModel
 
-from extract_text import process_pdf_bytes, list_chroma_collections, query_collection
+from extract_pdf_text import process_pdf_bytes, list_chroma_collections, query_collection
 
 class ConnectionManager:
     def __init__(self):

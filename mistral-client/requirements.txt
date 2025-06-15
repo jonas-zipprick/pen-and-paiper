@@ -1,8 +1,9 @@
-mistralai
-mcp
-griffe
-authlib
-fastapi[standard]
+authlib==1.6.0
+chromadb==1.0.12
+einops==0.8.1
+fastapi[standard]==0.115.9
+griffe==1.7.3
+#mcp==1.9.4
+mistralai==1.8.2
 pdfplumber==0.11.7
-chromadb>=1.0.12
-einops
+sentence-transformers==4.1.0
