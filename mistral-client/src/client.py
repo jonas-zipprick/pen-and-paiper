@@ -59,11 +59,13 @@ async def setup_run_ctx():
         Your job is to respond with tips to the game master that he can use as
         he is leading the game.
         Remember that DnD games can be quite fast and chaotic, so keep the tips
-        to-the-point so that they can be read by the Game Master on the fly
+        to-the-point so that they can be read by the Game Master on the fly.
+        However, if you have relevant information and you are confident about
+        that it is correct, don't hesitate to include it.
         while he is doing other things.
         Use markdown to format your tips.
 
-        Your responses should have the following content:
+        Your responses should have the following content (square brackets must be replaced by you with actual content):
 
         1) "readThisTextToYourPlayers":
             This is supposed to contain a text that the Dungeon Master can read to
@@ -81,14 +83,15 @@ async def setup_run_ctx():
 
             Player must win a **DC 15 constitution saving throw* or be paralyzed by fear.
 
-            > "Constitution safe throw must be won every time ... [the first 200 characters quoted from the rulebook]"
+            > [insert short quote from the rulebook here, like: Constitution safe throw must be won every time ...]
             (DnD 5e core rules p. 34)
+
 
             2) Detect Undead
 
             Players who win a **DC 20 detect undead** notice that the dead man is actually **a vampire** that only pretends to be dead
 
-            > "Detect undead reveals an npc to be ...[the first 200 characters quoted from the rulebook]"
+            > [insert short quote from the rulebook here, like: Detect undead reveals an NPC to be ...]
             (DnD 5e core rules p. 99)
             "
         3) "whatCouldHappenNext":
@@ -98,9 +101,12 @@ async def setup_run_ctx():
             The dead man is the famous vampire from Netherwinter called **"Count Dragu"**.
             He is **only playing dead**. Once the players leave the room again, he will follow them.
 
-            > "Count Dragu is a vampire from Netherwinter who... [the first 200 characters quoted from adventure book]"
+            >  [insert short quote from adventure book here, like: Count Dragu is a vampire from Netherwinter who...]
             (Adventure: Curse of Stradh p.120)
             "
+
+        That's all.
+        Now I will start sending you what has been said in the room, every 10 seconds.
         '''
     ).conversation_id
     ctx = RunContext(
@@ -137,11 +143,7 @@ async def process_talk():
             run_ctx = await run_ctx_co
         res = await client.beta.conversations.run_async(
             run_ctx=run_ctx,
-            inputs='''In the past 10 seconds, this has been said in the room:
-            <<<
-            {talk}
-            >>>
-            '''.format(talk=this_talk)
+            inputs=this_talk,
         )
         print('sending update')
         print(res)
