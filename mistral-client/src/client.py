@@ -232,7 +232,7 @@ async def query_text(
         return {"error": str(e)}
 
 
-@app.get("assistant/collections")
+@app.get("/assistant/collections")
 async def list_collections():
     """Return a list of all ChromaDB collections."""
     try:
