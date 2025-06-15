@@ -64,6 +64,9 @@ async def setup_run_ctx():
         that it is correct, don't hesitate to include it.
         while he is doing other things.
         Use markdown to format your tips.
+        Don't just base your tip on the last 10 seconds of what was being said,
+        but instead think about the big picture of the conversation (the last 1
+        to 10 minutes of talk).
 
         Your responses should have the following content (square brackets must be replaced by you with actual content):
 
@@ -146,9 +149,9 @@ async def process_talk():
             inputs=this_talk,
         )
         print('sending update')
-        print(res)
         for entry in res.output_entries:
             content = json.loads(entry.content)
+            print(content)
             await manager.broadcast("content:")
             await manager.broadcast("Read this text: " + content['readThisTextToYourPlayers'])
             await manager.broadcast("Related Rule: " + content['relatedGameRule'])
