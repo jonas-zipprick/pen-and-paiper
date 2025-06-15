@@ -1,3 +1,0 @@
-[submodule "roll20-ts"]
-	path = roll20-ts
-	url = git@github.com:kihira/roll20-ts.git
