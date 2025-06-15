@@ -4,7 +4,7 @@ import { Mic, StopCircle, AlertTriangle } from 'lucide-react';
 // Define the type for recording status for clarity
 type RecordingStatus = 'idle' | 'permission-pending' | 'recording' | 'stopped' | 'error';
 
-const WEBSOCKET_URL = 'wss://5jmyry5iz1jpar-8080.proxy.runpod.net/listen';
+const WEBSOCKET_URL = `wss://${location.host}/whisper/listen`;
 const CHUNK_DURATION = 3000; // 3 seconds
 
 export const FloatingRecorderWidget = () => {
