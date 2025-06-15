@@ -144,4 +144,4 @@ async def new_subscription(websocket: WebSocket):
         while True:
             await websocket.receive_json()
     except WebSocketDisconnect:
-        socket_manager.disconnect(websocket, user)
+        manager.disconnect(websocket)
