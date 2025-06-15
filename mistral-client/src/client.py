@@ -4,6 +4,7 @@ import os
 import json
 import time
 from fastapi import BackgroundTasks, FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form
+from fastapi.middleware.cors import CORSMiddleware
 
 from mistralai import Mistral
 from mistralai.extra.run.context import RunContext
@@ -162,6 +163,13 @@ async def process_talk():
 app = FastAPI(
 	docs_url='/assistant/docs',
 	openapi_url='/assistant/openapi.json',
+)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 
 @app.post("/assistant/")
