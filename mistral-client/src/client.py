@@ -38,10 +38,9 @@ class Talk(BaseModel):
     words_spoken: str
 
 class DmTip(BaseModel):
-    summaryOfWhatWasSaid: str
-    whatCouldHappenNext: str
     readThisTextToYourPlayers: str
     relatedGameRule: str
+    whatCouldHappenNext: str
 
 client = Mistral(api_key)
 agent = client.beta.agents.create(
@@ -53,7 +52,24 @@ mcp_client = MCPClientSSE(sse_params=SSEServerParams(url=server_url, timeout=100
 async def setup_run_ctx():
     conversation_id = client.beta.conversations.start(
         agent_id=agent.id,
-        inputs="Give Tips to the Dungeon Master of this Dungeons and Dragons game",
+        inputs= '''
+        You are an assistant to a Dungeon Master of a Dungeons and Dragons 5E Game.
+        In the following messages I will send you what the people in the room
+        are saying as they play the game.
+        Your job is to give tips to the game master that have the following content:
+
+        1) "readThisTextToYourPlayers":
+            This is supposed to contain a text that the Dungeon Master can read to
+            his players if he is out of ideas of what to say.
+            For example: "As you investigate the room you find a dead body behind a drawer.
+            As you open the drawer, you freeze in fear as you spot his lifeless hand falling towards you"
+        2) "relatedGameRule":
+            A quote from the rule-book or adventure-book that is relevant to the current situation.
+            For example: "Player must win a DC 15 constitution safe throw or be paralyzed by fear (DnD 5e core rules p. 34)"
+        3) "whatCouldHappenNext":
+            Ideas for the Dungeon Master of what could happen next.
+            Example: "The dead man is the famous vampire from Netherwinter called "Count Dragu" (Adventure: Curse of Stradh p.120). He is only playing dead. Once the players leave the room again, he will follow them"
+        '''
     ).conversation_id
     ctx = RunContext(
         conversation_id=conversation_id,
@@ -69,11 +85,9 @@ run_ctx = None
 
 unprocessed_talk = ''
 is_running = False
-summaryOfWhatWasSaid = ''
 async def process_talk():
     global is_running
     global unprocessed_talk
-    global summaryOfWhatWasSaid
     global run_ctx
 
     if is_running:
@@ -91,17 +105,20 @@ async def process_talk():
             run_ctx = await run_ctx_co
         res = await client.beta.conversations.run_async(
             run_ctx=run_ctx,
-            inputs="So far this happened: " + summaryOfWhatWasSaid + "\nNow, Someone people in the group say: " + this_talk,
+            inputs='''Now, Someone people in the group say this:
+            <<<
+            {talk}
+            >>>
+            '''.format(talk=this_talk)
         )
         print('sending update')
+        print(res)
         for entry in res.output_entries:
             content = json.loads(entry.content)
             await manager.broadcast("content:")
             await manager.broadcast("Read this text: " + content['readThisTextToYourPlayers'])
             await manager.broadcast("Related Rule: " + content['relatedGameRule'])
             await manager.broadcast("What could happen Next: " + content['whatCouldHappenNext'])
-            summaryOfWhatWasSaid = content['summaryOfWhatWasSaid']
-            await manager.broadcast("Summary of what was said: " + summaryOfWhatWasSaid)
 
 app = FastAPI()
 
