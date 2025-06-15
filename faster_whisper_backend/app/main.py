@@ -31,11 +31,12 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 # --- Your Model Loading Logic ---
-MODEL_NAME = "distil-whisper/distil-large-v3.5-ct2"
+#MODEL_NAME = "distil-whisper/distil-large-v3.5-ct2"
+MODEL_NAME = "distil-whisper/distil-small.en"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 COMPUTE_TYPE = "float32"
 MODEL_PATH = os.getenv("WHISPER_MODEL_PATH", "./whisper_models")
-TRANSCRIPTION_ENDPOINT = os.getenv("TRANSCRIPTION_ENDPOINT", "http://localhost:8002/transcriptions")
+TRANSCRIPTION_ENDPOINT = 'https://{domain}/assistant/'.format(domain=os.getenv("WORKSPACE_DEV_DOMAIN", "localhost:8002"))
 
 logger.info(f"Loading model '{MODEL_NAME}'...")
 model = WhisperModel(MODEL_NAME, device=DEVICE, compute_type=COMPUTE_TYPE, download_root=MODEL_PATH)
