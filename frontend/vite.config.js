@@ -4,7 +4,7 @@ import {defineConfig} from 'vite';
 // eslint-disable-next-line max-lines-per-function
 export default defineConfig(({command}) => ({
     base: '/',
-    publicDir: path.join(__dirname, 'src', 'public'),
+    publicDir: 'public',
 	server: {
         port: 3000,
 		allowedHosts: [
