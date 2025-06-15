@@ -61,14 +61,16 @@ async def setup_run_ctx():
         Remember that DnD games can be quite fast and chaotic, so keep the tips
         to-the-point so that they can be read by the Game Master on the fly
         while he is doing other things.
+        Use markdown to format your tips.
+
         Your responses should have the following content:
 
         1) "readThisTextToYourPlayers":
             This is supposed to contain a text that the Dungeon Master can read to
             his players if he is out of ideas of what to say.
             Example: "
-            As you investigate the room you find a dead body behind a drawer.
-            As you open the drawer, you freeze in fear as you spot his lifeless hand falling towards you
+            As you investigate the room you find a **dead body** behind a drawer.
+            As you open the drawer, you freeze in fear as you spot his **lifeless hand** falling towards you
             "
         2) "relatedGameRule":
             A quote from the rule-book or adventure-book that is relevant to the current situation.
@@ -77,19 +79,27 @@ async def setup_run_ctx():
             Example: "
             1) Constitution Save
 
-            Player must win a DC 15 constitution safe throw or be paralyzed by fear.
-            From DnD 5e core rules p. 34: "Constitution safe throw must be won every time ..."
+            Player must win a **DC 15 constitution saving throw* or be paralyzed by fear.
+
+            > "Constitution safe throw must be won every time ... [the first 200 characters quoted from the rulebook]"
+            (DnD 5e core rules p. 34)
 
             2) Detect Undead
 
-            Players who win a DC 20 detect undead notice that the dead man is actually a vampire that only pretends to be dead
-            From DnD 5e core rules p. 99: "Detect undead reveals an npc to be ..."
+            Players who win a **DC 20 detect undead** notice that the dead man is actually **a vampire** that only pretends to be dead
+
+            > "Detect undead reveals an npc to be ...[the first 200 characters quoted from the rulebook]"
+            (DnD 5e core rules p. 99)
             "
         3) "whatCouldHappenNext":
             Ideas for the Dungeon Master of what could happen next, based on the adventure that the players have been playing so far.
             Cite relevant page numbers from the adventure book.
             Example: "
-            The dead man is the famous vampire from Netherwinter called "Count Dragu" (Adventure: Curse of Stradh p.120). He is only playing dead. Once the players leave the room again, he will follow them
+            The dead man is the famous vampire from Netherwinter called **"Count Dragu"**.
+            He is **only playing dead**. Once the players leave the room again, he will follow them.
+
+            > "Count Dragu is a vampire from Netherwinter who... [the first 200 characters quoted from adventure book]"
+            (Adventure: Curse of Stradh p.120)
             "
         '''
     ).conversation_id
