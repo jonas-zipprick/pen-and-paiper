@@ -1,5 +1,5 @@
 # About
-**pen and pAIper** (pronounced: "pɛn ænd ˈpɑɪpə") is  A real-time Dungeon-Master assistant for DnD 5e.
+**pen and pAIper** (pronounced: "pɛn ænd ˈpɑɪpə") is a real-time Dungeon-Master assistant for DnD 5e.
 
 It works analyzing what is being said in the room using AI voice recognition and AI reasoning. 
 pen and pAIper then helps you as the Dungeon-Master in various ways:
@@ -15,4 +15,4 @@ You can also upload PDF files like Rulebooks, Adventures and Character Sheets th
 This repo has a ci.yml and can be run out-of-the-box on [codesphere.com](https://codesphere.com/)
 
 pen and pAIper relies on [mistral.ai](https://mistral.ai/).
-Set `MISTRAL_API_KEY` to your mistral API key in the Codesphere workspace
+Set `MISTRAL_API_KEY` to your mistral API key in your Codesphere Workspace
