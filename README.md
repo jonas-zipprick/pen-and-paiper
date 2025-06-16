@@ -1,7 +1,7 @@
 # About
 **pen and pAIper** (pronounced: "pɛn ænd ˈpɑɪpə") is a real-time Dungeon-Master assistant for DnD 5e.
 
-It works analyzing what is being said in the room using AI voice recognition and AI reasoning. 
+It works by analyzing what is being said in the room using AI voice recognition and AI reasoning. 
 pen and pAIper then helps you as the Dungeon-Master in various ways:
 
 - Reference Relevant Rules
