@@ -49,26 +49,26 @@ last_send_time = datetime.now()
 async def send_transcriptions():
     """Send collected transcriptions to the endpoint."""
     global transcription_buffer, last_send_time
-    
+
     while True:
         try:
             await asyncio.sleep(10)
-            
+
             current_time = datetime.now()
             if not transcription_buffer:
                 continue
-                
+
             # Combine all transcriptions into a single text
             combined_text = " ".join(trans["text"] for trans in transcription_buffer)
-            
+
             # Combine all words with their timestamps
             all_words = []
             for trans in transcription_buffer:
                 all_words.extend(trans["words"])
-            
+
             # Sort words by their start time
             all_words.sort(key=lambda x: x["start"])
-            
+
             # Prepare the payload
             payload = {
                 #"timestamp": current_time.isoformat(),
@@ -77,7 +77,7 @@ async def send_transcriptions():
                 #"words": all_words,
                 #"segment_count": len(transcription_buffer)
             }
-            
+
             # Send to endpoint
             async with aiohttp.ClientSession() as session:
                 try:
@@ -90,7 +90,7 @@ async def send_transcriptions():
                             logger.error(f"Failed to send transcriptions. Status: {response.status}")
                 except Exception as e:
                     logger.error(f"Error sending transcriptions: {str(e)}")
-                    
+
         except Exception as e:
             logger.error(f"Error in send_transcriptions task: {str(e)}")
             await asyncio.sleep(5)  # Wait a bit before retrying
@@ -104,7 +104,7 @@ async def startup_event():
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()
     logger.info("WebSocket connection established.")
-    
+
     try:
         while True:
             audio_file_chunk = await websocket.receive_bytes()
@@ -119,7 +119,7 @@ async def websocket_endpoint(websocket: WebSocket):
                     vad_filter=True,
                     word_timestamps=True
                 )
-                
+
                 results = []
                 for segment in segments:
                     if segment.text.strip():
@@ -133,7 +133,7 @@ async def websocket_endpoint(websocket: WebSocket):
                         results.append(segment_data)
                         # Add to global buffer
                         transcription_buffer.append(segment_data)
-                
+
                 if results:
                     logger.info(f"SUCCESS: Transcribed {info.duration:.2f}s of audio and sending results.")
                     await websocket.send_json({"type": "transcription", "segments": results})
@@ -155,14 +155,14 @@ app.mount("/static", StaticFiles(directory="app/static"), name="static")
 async def get_index():
     with open("app/static/index.html", "r") as f:
         html_content = f.read()
-    
+
     # Replace the hardcoded WebSocket URL with the one from environment variables
     websocket_url = 'wss://{domain}/whisper/listen'.format(domain = os.getenv("WORKSPACE_DEV_DOMAIN", "localhost:8000"))
     html_content = html_content.replace(
         'const WEBSOCKET_URL = \'ws://localhost:8000/listen\';',
         f'const WEBSOCKET_URL = \'{websocket_url}\';'
     )
-    
+
     return html_content
 
 @app.get("/")
@@ -175,4 +175,4 @@ async def health_check():
     }
 
 if __name__ == "__main__":
-    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True) 
+    uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
