@@ -148,23 +148,6 @@ async def websocket_endpoint(websocket: WebSocket):
     except Exception as e:
         logger.error(f"An unexpected websocket error occurred: {e}")
 
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-# Serve the HTML interface
-@app.get("/", response_class=HTMLResponse)
-async def get_index():
-    with open("app/static/index.html", "r") as f:
-        html_content = f.read()
-
-    # Replace the hardcoded WebSocket URL with the one from environment variables
-    websocket_url = 'wss://{domain}/whisper/listen'.format(domain = os.getenv("WORKSPACE_DEV_DOMAIN", "localhost:8000"))
-    html_content = html_content.replace(
-        'const WEBSOCKET_URL = \'ws://localhost:8000/listen\';',
-        f'const WEBSOCKET_URL = \'{websocket_url}\';'
-    )
-
-    return html_content
-
 @app.get("/")
 async def health_check():
     return {
