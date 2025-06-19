@@ -2,6 +2,7 @@
 import asyncio
 import os
 import json
+import yaml
 import time
 from fastapi import BackgroundTasks, FastAPI, WebSocket, WebSocketDisconnect, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -37,11 +38,6 @@ api_key = os.environ["MISTRAL_API_KEY"]
 class Talk(BaseModel):
     words_spoken: str
 
-class DmTip(BaseModel):
-    readThisTextToYourPlayers: str
-    relatedGameRule: str
-    whatCouldHappenNext: str
-
 client = Mistral(api_key)
 agent = client.beta.agents.create(
     model=MODEL,
@@ -58,10 +54,8 @@ async def setup_run_ctx():
         use as he is leading the game.
 
         Remember that DnD games can be quite fast and chaotic, so keep the tips
-        to-the-point so that they can be read by the Game Master on the fly while 
+        to-the-point so that they can be read by the Game Master on the fly while
 		he is doing other things.
-
-        Use markdown to format your tips.
 
         Don't just base your tip on the last 10 seconds of what was being said,
         but instead think about the big picture of the conversation (the last 1
@@ -69,19 +63,12 @@ async def setup_run_ctx():
 
         Every 10 seconds, I will send you what the people in the room have said,
         as they play the game.
-       
-        Your response to that prompt should be the actual tip and have
-        the following content (square brackets must be replaced by you with
+
+        Your response to that prompt must be valid yaml and have
+        the following properties (square brackets must be replaced by you with
         actual content):
 
-        1) "readThisTextToYourPlayers":
-            This is supposed to contain a text that the Dungeon Master can read to
-            his players if he is out of ideas of what to say.
-            Example: "
-            As you investigate the room you find a **dead body** behind a drawer.
-            As you open the drawer, you freeze in fear as you spot his **lifeless hand** falling towards you
-            "
-        2) "relatedGameRule":
+        1st property "relatedGameRule":
             A quote from the rule-book or adventure-book that is relevant to the current situation.
             If multiple rules apply, list them all and order them by relevance.
             Also quote the original rule.
@@ -101,7 +88,15 @@ async def setup_run_ctx():
             > [insert short quote from the rulebook here, like: Detect undead reveals an NPC to be ...]
             (DnD 5e core rules p. 99)
             "
-        3) "whatCouldHappenNext":
+        2nd property "readThisTextToYourPlayers":
+            This is supposed to contain a text that the Dungeon Master can read to
+            his players if he is out of ideas of what to say.
+            Example: "
+            As you investigate the room you find a **dead body** behind a drawer.
+            As you open the drawer, you freeze in fear as you spot his **lifeless hand** falling towards you
+            "
+
+        3rd property "whatCouldHappenNext":
             Ideas for the Dungeon Master of what could happen next, based on the adventure that the players have been playing so far.
             Cite relevant page numbers from the adventure book.
             Example: "
@@ -113,13 +108,15 @@ async def setup_run_ctx():
 
             "
 
+        Inside of each property, use markdown to format the content.
+        Don't wrap your response in "```yaml" "```" or other invalid yaml.
+
         That's all. Let's start.
         '''
     ).conversation_id
     ctx = RunContext(
         conversation_id=conversation_id,
         agent_id=agent.id,
-        output_format=DmTip,
         continue_on_fn_error=True,
     )
     return ctx
@@ -147,13 +144,22 @@ async def process_talk():
         print(this_talk)
         if run_ctx is None:
             run_ctx = await run_ctx_co
-        res = await client.beta.conversations.run_async(
+        events = await client.beta.conversations.run_stream_async(
             run_ctx=run_ctx,
             inputs=this_talk,
         )
-        for entry in res.output_entries:
-            print(entry.content)
-            await manager.broadcast(entry.content)
+        buffer = ''
+        async for chunk in events:
+            try:
+                buffer += chunk.data.content
+                tip = yaml.safe_load(buffer)
+                await manager.broadcast(json.dumps({
+                    'relatedGameRule': tip.get('relatedGameRule') or '',
+                    'readThisTextToYourPlayers': tip.get('readThisTextToYourPlayers') or '',
+                    'whatCouldHappenNext': tip.get('whatCouldHappenNext') or '',
+                }))
+            except (AttributeError, yaml.YAMLError) as err:
+                pass
 
 app = FastAPI(
 	docs_url='/assistant/docs',

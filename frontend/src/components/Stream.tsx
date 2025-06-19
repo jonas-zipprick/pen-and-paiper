@@ -5,7 +5,7 @@ import { Section } from './Section';
 
 
 export const StreamerView = () => {
-    const WEBSOCKET_URL = "wss://67934-3000.2.codesphere.com/assistant/ws";
+    const WEBSOCKET_URL = "ws://localhost:8000/assistant/ws";
     const [readNext, setReadNext] = useState<string>('The ether remains silent...');
     const [relatedRules, setRelatedRules] = useState<string>('No specific lore applies here...');
     const [happenNext, setHappenNext] = useState<string>('The threads of fate are unclear...');
@@ -14,24 +14,24 @@ export const StreamerView = () => {
 
     useEffect(() => {
         const connect = () => {
+            if (ws.current
+                && ([WebSocket.CONNECTING, WebSocket.OPEN] as number[])
+                    .includes(ws.current.readyState)) {
+                return;
+            }
             ws.current = new WebSocket(WEBSOCKET_URL);
             ws.current.onopen = () => setStatus('connected');
             ws.current.onclose = () => {
                 setStatus('disconnected');
                 setTimeout(connect, 5000);
-            };
+            }
             ws.current.onerror = () => setStatus('error');
             ws.current.onmessage = (event) => {
                 try {
-                    // 1. PARSE the incoming string data into a JavaScript object
                     const data = JSON.parse(event.data);
-
-                    // 2. SET state using the properties of the new object
-                    // (Added fallbacks to prevent crashes if a key is missing)
                     setReadNext(data.readThisTextToYourPlayers);
                     setRelatedRules(data.relatedGameRule);
                     setHappenNext(data.whatCouldHappenNext);
-
                 } catch (error) {
                     console.error("Failed to parse incoming JSON:", error);
                     setReadNext("A garbled message was received from the beyond.");
@@ -74,8 +74,8 @@ export const StreamerView = () => {
                 </header>
 
                 <main className="flex flex-col gap-8">
-                    <Section title="Whispers for the Party" content={readNext} />
                     <Section title="Forbidden Rules" content={relatedRules} />
+                    <Section title="Whispers for the Party" content={readNext} />
                     <Section title="Threads of Fate" content={happenNext} />
                 </main>
 

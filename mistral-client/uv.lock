@@ -829,6 +829,7 @@ dependencies = [
     { name = "mcp" },
     { name = "mistralai" },
     { name = "pdfplumber" },
+    { name = "pyyaml" },
     { name = "sentence-transformers" },
 ]
 
@@ -842,6 +843,7 @@ requires-dist = [
     { name = "mcp", specifier = ">=1.9.4" },
     { name = "mistralai", specifier = ">=1.8.2" },
     { name = "pdfplumber", specifier = ">=0.11.7" },
+    { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "sentence-transformers", specifier = ">=4.1.0" },
 ]
 

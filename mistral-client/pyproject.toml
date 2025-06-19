@@ -13,5 +13,6 @@ dependencies = [
     "mcp>=1.9.4",
     "mistralai>=1.8.2",
     "pdfplumber>=0.11.7",
+    "pyyaml>=6.0.2",
     "sentence-transformers>=4.1.0",
 ]

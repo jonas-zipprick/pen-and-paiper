@@ -1,0 +1,2 @@
+#!/bin/bash
+curl -d '{"words_spoken": "Strahds eyes narrow as he hears the players threat, but he merely smiles, his fangs glinting in the moonlight. Ah, such bravado, he says, his voice like velvet. But you should know that I have faced many challengers before you, and I am still here. Tell me, what makes you think you will be any different. I cast iceblast at strahd"}' -X POST -H "Content-Type: application/json" http://localhost:8000/assistant/
