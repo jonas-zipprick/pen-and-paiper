@@ -5,7 +5,7 @@ import { Section } from './Section';
 
 
 export const StreamerView = () => {
-    const WEBSOCKET_URL = `wss://${location.host}/assistant/listen`;
+    const WEBSOCKET_URL = `wss://${location.host}/assistant/ws`;
     const [readNext, setReadNext] = useState<string>('The ether remains silent...');
     const [relatedRules, setRelatedRules] = useState<string>('No specific lore applies here...');
     const [happenNext, setHappenNext] = useState<string>('The threads of fate are unclear...');
