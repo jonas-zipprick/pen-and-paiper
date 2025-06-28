@@ -117,8 +117,7 @@ export const FloatingRecorderWidget = () => {
         }
 
         if (socketRef.current?.readyState === WebSocket.OPEN) {
-            // Wait for potential late responses.
-            setTimeout(socketRef.current.close, 10_000);
+            socketRef.current.close();
         }
 
         mediaRecorderRef.current = null;
