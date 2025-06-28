@@ -44,6 +44,7 @@ export const FloatingRecorderWidget = () => {
         }
     };
 
+    let sendInterval: number;
     const startRecording = () => {
         setError(null);
         setStatus('permission-pending');
@@ -67,12 +68,11 @@ export const FloatingRecorderWidget = () => {
                 mediaRecorderRef.current.onstop = () => {
                     console.log("MediaRecorder stopped.");
                 };
-                const interval = setInterval(() => {
+                sendInterval = setInterval(() => {
                     console.log(`-> Sending audio chunk of size ${audioChunks.current!.length}`);
                     const audio = new Blob(audioChunks.current!, {type: 'audio/webm'});
                     socketRef?.current?.send(audio);
-                    // audioChunks.current = [];
-                }, 3000);
+                }, 2000);
                 mediaRecorderRef.current.start(CHUNK_DURATION);
             } catch (err) {
                 console.error('Error getting microphone access:', err);
@@ -116,6 +116,10 @@ export const FloatingRecorderWidget = () => {
 
         if (audioStreamRef.current) {
             audioStreamRef.current.getTracks().forEach(track => track.stop());
+        }
+
+        if (sendInterval) {
+            clearInterval(sendInterval);
         }
 
         if (socketRef.current?.readyState === WebSocket.OPEN) {
