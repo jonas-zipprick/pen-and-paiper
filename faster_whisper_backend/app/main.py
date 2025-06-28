@@ -36,7 +36,6 @@ MODEL_NAME = "small"
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 COMPUTE_TYPE = "int8"
 MODEL_PATH = os.getenv("WHISPER_MODEL_PATH", "./whisper_models")
-TRANSCRIPTION_ENDPOINT = 'https://{domain}/assistant/'.format(domain=os.getenv("WORKSPACE_DEV_DOMAIN", "localhost:8002"))
 
 logger.info(f"Loading model '{MODEL_NAME}'...")
 model = WhisperModel(MODEL_NAME, device=DEVICE, compute_type=COMPUTE_TYPE, download_root=MODEL_PATH)
@@ -73,8 +72,6 @@ async def websocket_endpoint(websocket: WebSocket):
                             ]
                         }
                         results.append(segment_data)
-                        # Add to global buffer
-                        transcription_buffer.append(segment_data)
 
                 if results:
                     logger.info(f"SUCCESS: Transcribed {info.duration:.2f}s of audio and sending results.")
