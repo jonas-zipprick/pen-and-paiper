@@ -90,7 +90,9 @@ export const FloatingRecorderWidget = () => {
                     'Accept': 'application/json',
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(trans.segments.map(t => t.text).join('')),
+                body: JSON.stringify({
+                    words_spoken: trans.segments.map(t => t.text).join(''),
+                }),
             });
         };
         socketRef.current.onerror = (event) => {

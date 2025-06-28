@@ -173,16 +173,10 @@ app.add_middleware(
     allow_headers=["*"],  # Allows all headers
 )
 
-all_talk = ''
 @app.post("/assistant/")
 async def post_talk(talk: Talk, background_tasks: BackgroundTasks):
     global unprocessed_talk
-    global all_talk
-    short_talk = talk.words_spoken[len(all_talk):]
-    all_talk = talk.words_spoken
-    print('short talk')
-    print(short_talk)
-    unprocessed_talk += '\n' + short_talk
+    unprocessed_talk += '\n' + talk.words_spoken[len(all_talk):]
     if not is_running:
         background_tasks.add_task(process_talk)
     return {"message": "Notification sent in the background"}
