@@ -42,64 +42,6 @@ logger.info(f"Loading model '{MODEL_NAME}'...")
 model = WhisperModel(MODEL_NAME, device=DEVICE, compute_type=COMPUTE_TYPE, download_root=MODEL_PATH)
 logger.info("Model loaded successfully.")
 
-# Global storage for transcriptions
-transcription_buffer: List[Dict] = []
-last_send_time = datetime.now()
-
-async def send_transcriptions():
-    """Send collected transcriptions to the endpoint."""
-    global transcription_buffer, last_send_time
-
-    while True:
-        try:
-            await asyncio.sleep(10)
-
-            current_time = datetime.now()
-            if not transcription_buffer:
-                continue
-
-            # Combine all transcriptions into a single text
-            combined_text = " ".join(trans["text"] for trans in transcription_buffer)
-
-            # Combine all words with their timestamps
-            all_words = []
-            for trans in transcription_buffer:
-                all_words.extend(trans["words"])
-
-            # Sort words by their start time
-            all_words.sort(key=lambda x: x["start"])
-
-            # Prepare the payload
-            payload = {
-                #"timestamp": current_time.isoformat(),
-                #"duration": (current_time - last_send_time).total_seconds(),
-                "words_spoken": combined_text,
-                #"words": all_words,
-                #"segment_count": len(transcription_buffer)
-            }
-
-            # Send to endpoint
-            async with aiohttp.ClientSession() as session:
-                try:
-                    async with session.post(TRANSCRIPTION_ENDPOINT, json=payload) as response:
-                        if response.status == 200:
-                            logger.info(f"Successfully sent combined transcription of {len(combined_text)} characters")
-                            transcription_buffer = []  # Clear buffer after successful send
-                            last_send_time = current_time
-                        else:
-                            logger.error(f"Failed to send transcriptions. Status: {response.status}")
-                except Exception as e:
-                    logger.error(f"Error sending transcriptions: {str(e)}")
-
-        except Exception as e:
-            logger.error(f"Error in send_transcriptions task: {str(e)}")
-            await asyncio.sleep(5)  # Wait a bit before retrying
-
-@app.on_event("startup")
-async def startup_event():
-    """Start the background task when the application starts."""
-    asyncio.create_task(send_transcriptions())
-
 @app.websocket("/listen")
 async def websocket_endpoint(websocket: WebSocket):
     await websocket.accept()

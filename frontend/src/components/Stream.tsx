@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { SocketStatus } from '../types';
 import { StatusIcon } from './StatusIcon';
 import { Section } from './Section';
+import {config} from '../config.ts';
 
 
 export const StreamerView = () => {
-    const WEBSOCKET_URL = `wss://${location.host}/assistant/ws`;
     const [readNext, setReadNext] = useState<string>('The ether remains silent...');
     const [relatedRules, setRelatedRules] = useState<string>('No specific lore applies here...');
     const [happenNext, setHappenNext] = useState<string>('The threads of fate are unclear...');
@@ -19,7 +19,7 @@ export const StreamerView = () => {
                     .includes(ws.current.readyState)) {
                 return;
             }
-            ws.current = new WebSocket(WEBSOCKET_URL);
+            ws.current = new WebSocket(config.assistantWsUrl);
             ws.current.onopen = () => setStatus('connected');
             ws.current.onclose = () => {
                 setStatus('disconnected');
