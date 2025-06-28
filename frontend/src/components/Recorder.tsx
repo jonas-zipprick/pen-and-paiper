@@ -84,7 +84,7 @@ export const FloatingRecorderWidget = () => {
         socketRef.current.onmessage = async (event) => {
             console.log('<- Received message from server:', event.data);
             const trans = JSON.parse(event.data) as Transcription;
-            await fetch(config.assistantWsUrl, {
+            await fetch(config.assistantHttpUrl, {
                 method: 'POST',
                 headers: {
                     'Accept': 'application/json',
