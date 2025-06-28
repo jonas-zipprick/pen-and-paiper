@@ -27,7 +27,8 @@ export const FloatingRecorderWidget = () => {
     const socketRef = useRef<WebSocket | null>(null);
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const audioStreamRef = useRef<MediaStream | null>(null);
-    const audioChunks = useRef<Blob[] | null>([])
+    const audioChunks = useRef<Blob[] | null>([]);
+    const sendIntervalRef = useRef<number | null>(null);
 
     useEffect(() => {
         // Standard cleanup on component unmount
@@ -44,7 +45,6 @@ export const FloatingRecorderWidget = () => {
         }
     };
 
-    let sendInterval: number;
     const startRecording = () => {
         setError(null);
         setStatus('permission-pending');
@@ -68,7 +68,7 @@ export const FloatingRecorderWidget = () => {
                 mediaRecorderRef.current.onstop = () => {
                     console.log("MediaRecorder stopped.");
                 };
-                sendInterval = setInterval(() => {
+                sendIntervalRef.current = setInterval(() => {
                     console.log(`-> Sending audio chunk of size ${audioChunks.current!.length}`);
                     const audio = new Blob(audioChunks.current!, {type: 'audio/webm'});
                     socketRef?.current?.send(audio);
@@ -78,6 +78,9 @@ export const FloatingRecorderWidget = () => {
                 console.error('Error getting microphone access:', err);
                 setError("Microphone access was denied.");
                 setStatus('error');
+                if (sendIntervalRef.current) {
+                    clearInterval(sendIntervalRef.current);
+                }
                 socketRef.current?.close();
             }
         };
@@ -113,23 +116,18 @@ export const FloatingRecorderWidget = () => {
         if (mediaRecorderRef.current?.state === 'recording') {
             mediaRecorderRef.current.stop();
         }
-
         if (audioStreamRef.current) {
             audioStreamRef.current.getTracks().forEach(track => track.stop());
         }
-
-        if (sendInterval) {
-            clearInterval(sendInterval);
+        if (sendIntervalRef.current) {
+            clearInterval(sendIntervalRef.current);
         }
-
         if (socketRef.current?.readyState === WebSocket.OPEN) {
             socketRef.current.close();
         }
-
         mediaRecorderRef.current = null;
         audioStreamRef.current = null;
         socketRef.current = null;
-
         if (status !== 'error') {
             setStatus('idle');
         }
